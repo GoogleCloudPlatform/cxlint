@@ -6,6 +6,7 @@ import logging
 import re
 
 from dataclasses import dataclass
+from typing import Dict, Any
 
 from rules import RulesDefinitions # pylint: disable=E0401
 from file_traversal import FileTraversal # pylint: disable=E0401
@@ -17,22 +18,38 @@ logging.basicConfig(
 )
 
 @dataclass
-class LintStats: # pylint: disable=R0903
+class LintStats:
     """Used to track linter stats for each section processed."""
-    def __init__(self):
-        self.total_issues = 0
-        self.total_inspected = 0
-        self.total_flows = 0
-        self.total_pages = 0
+    total_issues: int = 0
+    total_inspected: int = 0
+    total_flows: int = 0
+    total_pages: int = 0
+
+@dataclass
+class Flow:
+    """"Used to track current Flow Attributes."""
+    display_name: str = None # Flow Display Name
+    start_page_file: str = None # File Path Location of START_PAGE
+    dir_path: str = None # Full Directory Path for this Flow
+    data: Dict[str, Any] = None
+
+@dataclass
+class Page:
+    """Used to track current Page Attributes."""
+    flow: Flow = None
+    display_name: str = None
+    page_file: str = None
+    data: Dict[str, Any] = None
 
 @dataclass
 class Fulfillment:
     """Used to track current Fulfillment Attributes."""
-    def __init__(self):
-        self.trigger = None
-        self.text = None
-        self.resource = None
-        self.verbose = None
+    page: Page = None
+    trigger: str = None
+    text: str = None
+    resource: str = None
+    verbose: bool = False
+
 class CxLint:
     """Core CX Linter methods and functions."""
     def __init__(
@@ -43,10 +60,6 @@ class CxLint:
         self.traverse = FileTraversal()
 
         self.verbose = verbose
-        self.current_filepath = None
-        self.current_flow = None
-        self.current_page = None
-        self.current_resource = None
 
     @staticmethod
     def update_stats(
@@ -105,114 +118,118 @@ class CxLint:
         return trigger
 
 
-    def fulfillment_linter(self, trigger, text: str) -> str:
+    def fulfillment_linter(self, route: Fulfillment, stats: LintStats) -> str:
         """Executes all Text-based Fulfillment linter rules."""
 
-        resource = self.current_resource
-        verbose = self.verbose
-        total_issues = 0
+        route.verbose = self.verbose
+        # total_issues = 0
 
         # Closed-Choice Alternative
-        total_issues += self.rules.closed_choice_alternative_parser(
-            resource, trigger, text, verbose)
+        stats = self.rules.closed_choice_alternative_parser(route, stats)
 
         # Wh- Questions
-        total_issues += self.rules.wh_questions(
-            resource, trigger, text, verbose)
+        stats = self.rules.wh_questions(route, stats)
 
-        return total_issues
+        return stats
 
-    def lint_fulfillments(self, stats, resource, primary_key: str):
+    def lint_fulfillments(
+        self,
+        page: Page,
+        stats: LintStats,
+        primary_key: str):
         """Parse through Fulfillments structure and lint."""
         t2_key = 'triggerFulfillment'
         msg_key = 'messages'
         wh_key = 'webhook'
         param_key = 'setParameterActions'
 
-        total_issues = 0
-        total_inspected = 0
-
-        routes = resource.get(primary_key, None)
+        routes = page.data.get(primary_key, None)
 
         if routes:
-            for route in routes:
-                trigger = self.get_trigger_info(route, primary_key)
-                path = route.get(t2_key, None)
-                
+            for route_data in routes:
+                route = Fulfillment(page=page)
+                route.trigger = self.get_trigger_info(route_data, primary_key)
+                path = route_data.get(t2_key, None)
+
                 # check Messages
                 if path and msg_key in path:
-                    
+
                     for item in path[msg_key]:
                         if 'text' in item:
                             for text in item['text']['text']:
-                                total_inspected += 1
+                                stats.total_inspected += 1
+                                route.text = text
+
                                 # At this point, we can capture and store all the text elements for later processing
                                 # Perhaps we build a map of protos that contain all the data nicely wrapped up that we can iter over?
                                 # TODO (pmarlow) consider implementing a Fulfillment class that can store all these items in an object
-                                total_issues += self.fulfillment_linter(trigger, text)
+                                stats = self.fulfillment_linter(route, stats)
 
                 elif path and wh_key in path:
                     None
                     # logging.info(path[wh_key])
 
-        stats = self.update_stats(total_issues, total_inspected, stats)
 
         return stats
 
     def lint_start_page(
         self,
-        flow_path: str,
+        flow: Flow,
         stats: LintStats):
         """Process a single Flow Path file."""
-        with open(flow_path, 'r', encoding='UTF-8') as flow_file:
-            data = json.load(flow_file)
-            self.current_resource = f'{self.current_flow}:START_PAGE'
+        with open(flow.start_page_file, 'r', encoding='UTF-8') as flow_file:
+            page = Page(flow=flow)
+            page.display_name = 'START_PAGE'
 
-            stats = self.lint_fulfillments(stats, data, 'eventHandlers')
-            stats = self.lint_fulfillments(stats, data, 'transitionRoutes')
+            page.data = json.load(flow_file)
+
+            stats = self.lint_fulfillments(page, stats, 'eventHandlers')
+            stats = self.lint_fulfillments(page, stats, 'transitionRoutes')
+
 
         return stats
 
-    def lint_flow(self, flow_path: str, stats: LintStats):
+    def lint_flow(self, flow: Flow, stats: LintStats):
         """Lint a Single Flow dir and all subdirectories."""
-        self.current_flow = self.parse_filepath(flow_path, 'flow')
+        flow.display_name = self.parse_filepath(flow.dir_path, 'flow')
 
-        message = f'{"*" * 15} Flow: {self.current_flow}'
+        message = f'{"*" * 15} Flow: {flow.display_name}'
         logging.info(message)
 
-        start_page_file = f'{flow_path}/{self.current_flow}.json'
+        flow.start_page_file = f'{flow.dir_path}/{flow.display_name}.json'
 
-        stats = self.lint_start_page(start_page_file, stats)
-        stats = self.lint_pages_directory(flow_path, stats)
+        stats = self.lint_start_page(flow, stats)
+        stats = self.lint_pages_directory(flow, stats)
 
         return stats
 
-    def lint_page(self, page_path: str, stats: LintStats):
+    def lint_page(self, page: Page, stats: LintStats):
         """Lint a Single Page file."""
-        self.current_page = self.parse_filepath(page_path, 'page')
+        page.display_name = self.parse_filepath(page.page_file, 'page')
 
-        with open(page_path, 'r', encoding='UTF-8') as page_file:
-            data = json.load(page_file)
-            self.current_resource = f'{self.current_flow}:{self.current_page}'
+        with open(page.page_file, 'r', encoding='UTF-8') as page_file:
+            page.data = json.load(page_file)
 
-            stats = self.lint_fulfillments(stats, data, 'eventHandlers')
-            stats = self.lint_fulfillments(stats, data, 'transitionRoutes')
+            stats = self.lint_fulfillments(page, stats, 'eventHandlers')
+            stats = self.lint_fulfillments(page, stats, 'transitionRoutes')
 
         return stats
 
-    def lint_pages_directory(self, flow_path: str, stats: LintStats):
+    def lint_pages_directory(self, flow: Flow, stats: LintStats):
         """Linting the Pages dir inside a specific Flow dir."""
         # start_message = f'{"*" * 10} Begin Page Linter'
         # logging.info(start_message)
 
         # Some Flows may not contain Pages, so we check for the existence
         # of the directory before traversing
-        if 'pages' in os.listdir(flow_path):
-            page_paths = self.traverse.build_page_path_list(flow_path)
+        if 'pages' in os.listdir(flow.dir_path):
+            page_paths = self.traverse.build_page_path_list(flow.dir_path)
 
             for page_path in page_paths:
+                page = Page(flow=flow)
+                page.page_file = page_path
                 stats.total_pages += 1
-                stats = self.lint_page(page_path, stats)
+                stats = self.lint_page(page, stats)
 
         return stats
 
@@ -240,7 +257,9 @@ class CxLint:
 
         # linting happens here
         for flow_path in flow_paths:
-            stats = self.lint_flow(flow_path, stats)
+            flow = Flow()
+            flow.dir_path = flow_path
+            stats = self.lint_flow(flow, stats)
 
         header = "-" * 20
         rating = (1-(stats.total_issues/stats.total_inspected))*10
