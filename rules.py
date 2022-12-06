@@ -12,62 +12,50 @@ logging.basicConfig(
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
     @staticmethod
-    def regex_logger_output(
-        match,
-        resource: str,
-        trigger: str,
-        message: str,
-        text: str,
-        verbose: bool) -> int:
+    def regex_logger_output(route, message: str) -> None:
         """Consolidated logging method for rules."""
-        counter = 0
-        if match:
-            if verbose:
-                logging.info(
-                    '%s:%s: \n%s: \n%s\n', resource, trigger, message, text)
-            else:
-                logging.info('%s:%s: %s', resource, trigger, message)
+        if route.verbose:
+            logging.info(
+                '%s:%s:%s: \n%s: \n%s\n',
+                route.page.flow.display_name,
+                route.page.display_name,
+                route.trigger,
+                message,
+                route.text)
+        else:
+            logging.info(
+                '%s:%s:%s: %s',
+                route.page.flow.display_name,
+                route.page.display_name,
+                route.trigger,
+                message)
 
-            counter = 1
-
-        return counter
-
-    def closed_choice_alternative_parser(
-        self,
-        resource: str,
-        trigger: str,
-        text: str,
-        verbose: bool) -> None:
+    def closed_choice_alternative_parser(self, route, stats) -> object:
         """Identifies a Closed Choice Alternative Question."""
         message = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
             '(A? or B.)'
 
         pattern = r'(\sare\s|\sdo\s|should\s|\swill\s|what).*\sor\s.*'
-        match = re.search(pattern, text, flags=re.IGNORECASE)
+        match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
-        counter = self.regex_logger_output(
-            match, resource, trigger, message, text, verbose)
+        if match:
+            stats.total_issues += 1
+            self.regex_logger_output(route, message)
 
-        return counter
+        return stats
 
-    def wh_questions(
-        self,
-        resource: str,
-        trigger: str,
-        text: str,
-        verbose: bool) -> None:
+    def wh_questions(self, route, stats) -> object:
         """Identifies a Wh- Question and checks for appropriate punctuation."""
-        counter = 0
         message = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
 
         pattern = r'(How|Which|What|Where|When|Why).*(\?)'
-        match = re.search(pattern, text, flags=re.IGNORECASE)
+        match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
-        if match and 'event' not in trigger:
-            counter = self.regex_logger_output(
-                match, resource, trigger, message, text, verbose)
+        if match and 'event' not in route.trigger:
+            stats.total_issues += 1
+            self.regex_logger_output(route, message)
 
-        return counter
+        return stats
 
     # def clarifying_questions(
     #     self,
