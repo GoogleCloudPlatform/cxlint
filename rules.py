@@ -1,6 +1,7 @@
 """Rule Definitions for CX Lint."""
 
 import logging
+import re
 
 # logging config
 logging.basicConfig(
@@ -10,21 +11,20 @@ logging.basicConfig(
 
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
-
     @staticmethod
-    def closed_choice_alternative_parser(
+    def regex_logger_output(
+        match,
         resource: str,
         trigger: str,
+        message: str,
         text: str,
-        verbose: bool) -> None:
-        """Identifies a Closed Choice Alternative Question."""
-
+        verbose: bool) -> int:
+        """Consolidated logging method for rules."""
         counter = 0
-        message = 'R001: Closed-Choice Alternative Missing Intermediate `?` (A? or B.)'
-
-        if ' or ' in text:
+        if match:
             if verbose:
-                logging.info('%s:%s: \n%s: \n%s\n', resource, trigger, message, text)
+                logging.info(
+                    '%s:%s: \n%s: \n%s\n', resource, trigger, message, text)
             else:
                 logging.info('%s:%s: %s', resource, trigger, message)
 
@@ -32,7 +32,43 @@ class RulesDefinitions:
 
         return counter
 
-    @staticmethod
-    def something_else():
-        """test"""
-        return None
+    def closed_choice_alternative_parser(
+        self,
+        resource: str,
+        trigger: str,
+        text: str,
+        verbose: bool) -> None:
+        """Identifies a Closed Choice Alternative Question."""
+        message = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
+            '(A? or B.)'
+
+        pattern = r'(\sare\s|\sdo\s|should\s|\swill\s|what).*\sor\s.*'
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+
+        counter = self.regex_logger_output(
+            match, resource, trigger, message, text, verbose)
+
+        return counter
+
+    def wh_questions(
+        self,
+        resource: str,
+        trigger: str,
+        text: str,
+        verbose: bool) -> None:
+        """Identifies a Wh- Question and checks for appropriate punctuation."""
+        counter = 0
+        message = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
+
+        pattern = r'(How|Which|What|Where|When|Why).*(\?)'
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+
+        if match and 'event' not in trigger:
+            counter = self.regex_logger_output(
+                match, resource, trigger, message, text, verbose)
+
+        return counter
+
+    # def clarifying_questions(
+    #     self,
+    # )
