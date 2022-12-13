@@ -35,7 +35,11 @@ class RulesDefinitions:
         message = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
             '(A? or B.)'
 
-        pattern = r'(\sare\s|\sdo\s|should\s|\swill\s|what).*\sor\s.*'
+        # pattern = r'(\sare\s|\sdo\s|should\s|\swill\s|what).*\sor\s.*'
+
+        # updated pattern
+        pattern = r'^(What|Where|When|Who|Why|How) (.*) or (.*)\?$'
+
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match:
@@ -48,7 +52,11 @@ class RulesDefinitions:
         """Identifies a Wh- Question and checks for appropriate punctuation."""
         message = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
 
-        pattern = r'(How|Which|What|Where|When|Why).*(\?)'
+        # pattern = r'(How|Which|What|Where|When|Why).*(\?)'
+
+        # updated pattern
+        pattern = r'^(what|when|where|who|why|how)\b.*\?$'
+
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match and 'event' not in route.trigger:
@@ -57,6 +65,19 @@ class RulesDefinitions:
 
         return stats
 
-    # def clarifying_questions(
-    #     self,
-    # )
+    def clarifying_questions(self, route, stats) -> object:
+        """Identifies Clarifying Questions that are missing `?` Punctuation."""
+        message = 'R003: Clarifying Question Should Use `?` Punctuation'
+
+        # pattern = r'^(How|Which|What|Where|When|Why).*(\.)$'
+
+        # updated pattern
+        pattern = r'^(what|when|where|who|why|how)\b.*\.$'
+
+        match = re.search(pattern, route.text, flags=re.IGNORECASE)
+
+        if match and 'event' in route.trigger:
+            stats.total_issues += 1
+            self.regex_logger_output(route, message)
+
+        return stats
