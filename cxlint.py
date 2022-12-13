@@ -6,10 +6,10 @@ import logging
 import re
 
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, List, Any
 
 from rules import RulesDefinitions # pylint: disable=E0401
-from file_traversal import FileTraversal # pylint: disable=E0401
+# from file_traversal import FileTraversal # pylint: disable=E0401
 
 # logging config
 logging.basicConfig(
@@ -40,6 +40,8 @@ class Page:
     display_name: str = None
     page_file: str = None
     data: Dict[str, Any] = None
+    events: List[object] = None
+    routes: List[object] = None
 
 @dataclass
 class Fulfillment:
@@ -57,9 +59,46 @@ class CxLint:
         verbose: bool = False):
 
         self.rules = RulesDefinitions()
-        self.traverse = FileTraversal()
-
         self.verbose = verbose
+
+    @staticmethod
+    def build_flow_path_list(agent_local_path: str):
+        """Builds a list of dirs, each representing a Flow directory.
+
+        Ex: /path/to/something/flows/<flow_dir>
+
+        This dir path can then be used to find the next level of information
+        in the directory by appending the appropriate next dir structures like:
+        - <flow_name>.json, for the Flow object
+        - /transitionRouteGroups, for the Route Groups dir
+        - /pages, for the Pages dir
+        """
+        flows_path = agent_local_path + '/flows'
+
+        flow_paths = []
+
+        for flow_dir in os.listdir(flows_path):
+            # start_page_flow_file = flow_dir + '.json'
+            flow_dir_path = f'{flows_path}/{flow_dir}'
+            flow_paths.append(flow_dir_path)
+
+        return flow_paths
+
+    @staticmethod
+    def build_page_path_list(flow_path: str):
+        """Builds a list of files, each representing a Page.
+
+        Ex: /path/to/something/flows/<flow_dir>/pages/<page_name>.json
+        """
+        pages_path = f'{flow_path}/pages'
+
+        page_paths = []
+
+        for page in os.listdir(pages_path):
+            page_file_path = f'{pages_path}/{page}'
+            page_paths.append(page_file_path)
+
+        return page_paths
 
     @staticmethod
     def update_stats(
@@ -117,8 +156,7 @@ class CxLint:
 
         return trigger
 
-
-    def fulfillment_linter(self, route: Fulfillment, stats: LintStats) -> str:
+    def lint_agent_responses(self, route: Fulfillment, stats: LintStats) -> str:
         """Executes all Text-based Fulfillment linter rules."""
 
         route.verbose = self.verbose
@@ -130,47 +168,119 @@ class CxLint:
         # Wh- Questions
         stats = self.rules.wh_questions(route, stats)
 
+        # Clarifying Questions
+        stats = self.rules.clarifying_questions(route, stats)
+
         return stats
 
-    def lint_fulfillments(
+    def lint_fulfillment_type(
+        self,
+        stats: LintStats,
+        route: Fulfillment,
+        path: object,
+        type: str):
+        """Parse through specific fulfillment types and lint."""
+        if 'messages' in path:
+            for item in path['messages']:
+                if 'text' in item:
+                    for text in item['text']['text']:
+                        stats.total_inspected += 1
+                        route.text = text
+
+                        stats = self.lint_agent_responses(route, stats)
+
+        return stats
+
+
+    def lint_events(
         self,
         page: Page,
-        stats: LintStats,
-        primary_key: str):
-        """Parse through Fulfillments structure and lint."""
-        t2_key = 'triggerFulfillment'
-        msg_key = 'messages'
-        wh_key = 'webhook'
-        param_key = 'setParameterActions'
+        stats: LintStats):
+        """Parse through all Page Event Handlers and lint."""
+        tf_key = 'triggerFulfillment'
 
-        routes = page.data.get(primary_key, None)
+        if not page.events:
+            return stats
 
-        if routes:
-            for route_data in routes:
-                route = Fulfillment(page=page)
-                route.trigger = self.get_trigger_info(route_data, primary_key)
-                path = route_data.get(t2_key, None)
+        for route_data in page.events:
+            route = Fulfillment(page=page)
+            route.trigger = self.get_trigger_info(route_data, 'eventHandlers')
+            path = route_data.get(tf_key, None)
 
-                # check Messages
-                if path and msg_key in path:
+            if not path:
+                continue
 
-                    for item in path[msg_key]:
-                        if 'text' in item:
-                            for text in item['text']['text']:
-                                stats.total_inspected += 1
-                                route.text = text
-
-                                # At this point, we can capture and store all the text elements for later processing
-                                # Perhaps we build a map of protos that contain all the data nicely wrapped up that we can iter over?
-                                # TODO (pmarlow) consider implementing a Fulfillment class that can store all these items in an object
-                                stats = self.fulfillment_linter(route, stats)
-
-                elif path and wh_key in path:
-                    None
-                    # logging.info(path[wh_key])
-
+            stats = self.lint_fulfillment_type(stats, route, path, 'messages')
 
         return stats
+
+    def lint_routes(
+        self,
+        page: Page,
+        stats: LintStats):
+        """Parse through all Transition Routes and lint."""
+        tf_key = 'triggerFulfillment'
+
+        if not page.routes:
+            return stats
+
+        for route_data in page.routes:
+            route = Fulfillment(page=page)
+            route.trigger = self.get_trigger_info(route_data, 'transitionRoutes')
+            path = route_data.get(tf_key, None)
+
+            if not path:
+                continue
+
+            stats = self.lint_fulfillment_type(stats, route, path, 'messages')
+
+        return stats
+
+    # def lint_routes(
+    #     self,
+    #     page: Page,
+    #     stats: LintStats,
+    #     primary_key: str):
+    #     """Parse through Fulfillments structure and lint."""
+    #     t2_key = 'triggerFulfillment'
+    #     msg_key = 'messages'
+    #     wh_key = 'webhook'
+    #     param_key = 'setParameterActions'
+
+    #     if page.events:
+    #         None
+
+    #     if page.routes:
+    #         None
+
+    #     routes = page.data.get(primary_key, None)
+
+    #     if routes:
+    #         for route_data in routes:
+    #             route = Fulfillment(page=page)
+    #             route.trigger = self.get_trigger_info(route_data, primary_key)
+    #             path = route_data.get(t2_key, None)
+
+    #             # check Messages
+    #             if path and msg_key in path:
+
+    #                 for item in path[msg_key]:
+    #                     if 'text' in item:
+    #                         for text in item['text']['text']:
+    #                             stats.total_inspected += 1
+    #                             route.text = text
+
+    #                             # At this point, we can capture and store all the text elements for later processing
+    #                             # Perhaps we build a map of protos that contain all the data nicely wrapped up that we can iter over?
+    #                             # TODO (pmarlow) consider implementing a Fulfillment class that can store all these items in an object
+    #                             stats = self.lint_agent_responses(route, stats)
+
+    #             elif path and wh_key in path:
+    #                 None
+    #                 # logging.info(path[wh_key])
+
+
+        # return stats
 
     def lint_start_page(
         self,
@@ -182,9 +292,11 @@ class CxLint:
             page.display_name = 'START_PAGE'
 
             page.data = json.load(flow_file)
+            page.events = page.data.get('eventHandlers', None)
+            page.routes = page.data.get('transitionRoutes', None)
 
-            stats = self.lint_fulfillments(page, stats, 'eventHandlers')
-            stats = self.lint_fulfillments(page, stats, 'transitionRoutes')
+            stats = self.lint_events(page, stats)
+            stats = self.lint_routes(page, stats)
 
 
         return stats
@@ -209,9 +321,11 @@ class CxLint:
 
         with open(page.page_file, 'r', encoding='UTF-8') as page_file:
             page.data = json.load(page_file)
+            page.events = page.data.get('eventHandlers', None)
+            page.routes = page.data.get('transitionRoutes', None)
 
-            stats = self.lint_fulfillments(page, stats, 'eventHandlers')
-            stats = self.lint_fulfillments(page, stats, 'transitionRoutes')
+            stats = self.lint_events(page, stats)
+            stats = self.lint_routes(page, stats)
 
         return stats
 
@@ -223,7 +337,7 @@ class CxLint:
         # Some Flows may not contain Pages, so we check for the existence
         # of the directory before traversing
         if 'pages' in os.listdir(flow.dir_path):
-            page_paths = self.traverse.build_page_path_list(flow.dir_path)
+            page_paths = self.build_page_path_list(flow.dir_path)
 
             for page_path in page_paths:
                 page = Page(flow=flow)
@@ -252,7 +366,7 @@ class CxLint:
         stats = LintStats()
 
         # Create a list of all Flow paths to iter through
-        flow_paths = self.traverse.build_flow_path_list(agent_local_path)
+        flow_paths = self.build_flow_path_list(agent_local_path)
         stats.total_flows = len(flow_paths)
 
         # linting happens here
@@ -269,18 +383,3 @@ class CxLint:
             f'{stats.total_inspected} candidates inspected.'\
             f'\nYour Agent Flows rated at {rating:.2f}/10.0\n\n'
         logging.info(end_message)
-
-
-# TODO: pmarlow - Build another class to traverse different file trees.
-# Input: Type of file tree corresponding w/resource name (i.e. intents, testCases, etc.)
-# Output: Root file path to start for traversal
-
-    # def get_root_traversal_path(self, resource_type: str):
-    #     """Provide resource name and get root traversal path."""
-    #     if resource_type == 'flow':
-    #         base_path = agent_path + 
-
-    # def find_broken_intents(self, agent_path: str):
-    #     base_path = agent_path + '/intents'
-    #     for intent_dir in os.listdir(base_path):
-    #         for tp_dir in os.listdir(base_path + f'/{intent_dir}'):
