@@ -1,5 +1,6 @@
 """Core class and methods for CX Linter."""
 
+import configparser
 import os
 import json
 import logging
@@ -16,6 +17,10 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
 )
+
+# configparser
+config = configparser.ConfigParser()
+config.read('.cxlintrc')
 
 @dataclass
 class LintStats:
@@ -60,6 +65,17 @@ class CxLint:
 
         self.rules = RulesDefinitions()
         self.verbose = verbose
+        self.disable_map = self.load_message_controls()
+
+    @staticmethod
+    def load_message_controls() -> Dict[str,str]:
+        """Loads the config file for message control into a map."""
+        msg_list = config['MESSAGES CONTROL']['disable'].replace(
+            '\n', '').split(',')
+
+        msg_dict = {msg:False for msg in msg_list}
+
+        return msg_dict
 
     @staticmethod
     def build_flow_path_list(agent_local_path: str):
@@ -163,13 +179,16 @@ class CxLint:
         # total_issues = 0
 
         # Closed-Choice Alternative
-        stats = self.rules.closed_choice_alternative_parser(route, stats)
+        if self.disable_map.get('closed-choice-alternative', True):
+            stats = self.rules.closed_choice_alternative_parser(route, stats)
 
         # Wh- Questions
-        stats = self.rules.wh_questions(route, stats)
+        if self.disable_map.get('wh-questions', True):
+            stats = self.rules.wh_questions(route, stats)
 
         # Clarifying Questions
-        stats = self.rules.clarifying_questions(route, stats)
+        if self.disable_map.get('clarifying-questions', True):
+            stats = self.rules.clarifying_questions(route, stats)
 
         return stats
 
@@ -178,10 +197,10 @@ class CxLint:
         stats: LintStats,
         route: Fulfillment,
         path: object,
-        type: str):
+        ftype: str):
         """Parse through specific fulfillment types and lint."""
-        if 'messages' in path:
-            for item in path['messages']:
+        if ftype in path:
+            for item in path[ftype]:
                 if 'text' in item:
                     for text in item['text']['text']:
                         stats.total_inspected += 1
@@ -235,52 +254,6 @@ class CxLint:
             stats = self.lint_fulfillment_type(stats, route, path, 'messages')
 
         return stats
-
-    # def lint_routes(
-    #     self,
-    #     page: Page,
-    #     stats: LintStats,
-    #     primary_key: str):
-    #     """Parse through Fulfillments structure and lint."""
-    #     t2_key = 'triggerFulfillment'
-    #     msg_key = 'messages'
-    #     wh_key = 'webhook'
-    #     param_key = 'setParameterActions'
-
-    #     if page.events:
-    #         None
-
-    #     if page.routes:
-    #         None
-
-    #     routes = page.data.get(primary_key, None)
-
-    #     if routes:
-    #         for route_data in routes:
-    #             route = Fulfillment(page=page)
-    #             route.trigger = self.get_trigger_info(route_data, primary_key)
-    #             path = route_data.get(t2_key, None)
-
-    #             # check Messages
-    #             if path and msg_key in path:
-
-    #                 for item in path[msg_key]:
-    #                     if 'text' in item:
-    #                         for text in item['text']['text']:
-    #                             stats.total_inspected += 1
-    #                             route.text = text
-
-    #                             # At this point, we can capture and store all the text elements for later processing
-    #                             # Perhaps we build a map of protos that contain all the data nicely wrapped up that we can iter over?
-    #                             # TODO (pmarlow) consider implementing a Fulfillment class that can store all these items in an object
-    #                             stats = self.lint_agent_responses(route, stats)
-
-    #             elif path and wh_key in path:
-    #                 None
-    #                 # logging.info(path[wh_key])
-
-
-        # return stats
 
     def lint_start_page(
         self,
