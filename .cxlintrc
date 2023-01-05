@@ -1,0 +1,16 @@
+# This Dialogflow CX rcfile contains a best-effort configuration to uphold the
+# best-practices and style described in the Dialogflow CX style guides:
+#   https://cloud.google.com/dialogflow/cx/docs/concept/agent-design
+#   https://cloud.google.com/dialogflow/cx/docs/concept/voice-agent-design
+#
+# Additionally, some working best practices from our delivery teams that are
+# not currently documented above have been codified as rules within CX Lint.
+#
+# This version has been modified to expect 4 space indents instead of 2.
+
+
+[MESSAGES CONTROL]
+# Disable the message, report, category or checker with the given id(s).
+
+# Comma separated list of symbolic names for linter rules to disable
+disable=wh-questions,
