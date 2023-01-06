@@ -9,7 +9,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Any
 
-from rules import RulesDefinitions # pylint: disable=E0401
+from cxlint.rules import RulesDefinitions # pylint: disable=E0401
 # from file_traversal import FileTraversal # pylint: disable=E0401
 
 # logging config
@@ -20,7 +20,7 @@ logging.basicConfig(
 
 # configparser
 config = configparser.ConfigParser()
-config.read('/Users/pmarlow/eng/att/cxlint/.cxlintrc')
+config.read('cxlint/.cxlintrc')
 
 @dataclass
 class LintStats:
