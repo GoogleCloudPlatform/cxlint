@@ -13,4 +13,10 @@
 # Disable the message, report, category or checker with the given id(s).
 
 # Comma separated list of symbolic names for linter rules to disable
-disable=wh-questions,
+# Uncomment lines to disable linting rules.
+disable=
+#    closed-choice-alternative,
+#    wh-questions,
+#    clarifying-questions,
+#    intent-missing-tps,
+#    intent-min-tps
