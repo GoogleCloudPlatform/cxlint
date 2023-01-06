@@ -2,6 +2,7 @@
 
 import logging
 import re
+import os
 
 # logging config
 logging.basicConfig(
@@ -12,23 +13,53 @@ logging.basicConfig(
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
     @staticmethod
-    def regex_logger_output(route, message: str) -> None:
-        """Consolidated logging method for rules."""
-        if route.verbose:
+    def page_logger_output(resource, message: str) -> None:
+        """Consolidated logging method for Page rules."""
+        if resource.verbose:
             logging.info(
                 '%s:%s:%s: \n%s: \n%s\n',
-                route.page.flow.display_name,
-                route.page.display_name,
-                route.trigger,
+                resource.page.flow.display_name,
+                resource.page.display_name,
+                resource.trigger,
                 message,
-                route.text)
+                resource.text)
         else:
             logging.info(
                 '%s:%s:%s: %s',
-                route.page.flow.display_name,
-                route.page.display_name,
-                route.trigger,
+                resource.page.flow.display_name,
+                resource.page.display_name,
+                resource.trigger,
                 message)
+
+    @staticmethod
+    def intent_logger_output(intent, message: str) -> None:
+        """Consolidated logging method for Intent rules."""
+        if intent.verbose:
+            logging.info(
+                '%s:%s',
+                intent.display_name,
+                message)
+        else:
+            logging.info(
+                '%s:%s',
+                intent.display_name,
+                message)
+
+    @staticmethod
+    def check_if_head_intent(intent):
+        """Checks if Intent is Head Intent based on labels and name."""
+        hid = False
+
+        if 'head' in intent.display_name:
+            hid = True
+        # elif intent.labels:
+        #     for label in intent.labels:
+        #         if 'head' in label['key']:
+        #             hid = True
+        #         if 'head' in label['value']:
+        #             hid = True
+
+        return hid
 
     def closed_choice_alternative_parser(self, route, stats) -> object:
         """Identifies a Closed Choice Alternative Question."""
@@ -44,7 +75,7 @@ class RulesDefinitions:
 
         if match:
             stats.total_issues += 1
-            self.regex_logger_output(route, message)
+            self.page_logger_output(route, message)
 
         return stats
 
@@ -61,7 +92,7 @@ class RulesDefinitions:
 
         if match and 'event' not in route.trigger:
             stats.total_issues += 1
-            self.regex_logger_output(route, message)
+            self.page_logger_output(route, message)
 
         return stats
 
@@ -78,6 +109,37 @@ class RulesDefinitions:
 
         if match and 'event' in route.trigger:
             stats.total_issues += 1
-            self.regex_logger_output(route, message)
+            self.page_logger_output(route, message)
+
+        return stats
+
+    def missing_training_phrases(self, intent, stats) -> object:
+        """Checks for Intents that are Missing Training Phrases."""
+        message = 'R004: Intent is Missing Training Phrases.'
+
+        stats.total_issues += 1
+        self.intent_logger_output(intent, message)
+
+        return stats
+
+    def min_tps_head_intent(self, intent, lang_code, stats) -> object:
+        """Determines if Intent has min recommended training phrases."""
+        n_tps = len(intent.training_phrases[lang_code]['tps'])
+
+        hid = self.check_if_head_intent(intent)
+
+        if hid and n_tps < 50:
+            message = 'R005: Head Intent Does Not Have Minimum Training '\
+                f'Phrases. ({n_tps} / 50)'
+
+            stats.total_issues += 1
+            self.intent_logger_output(intent, message)
+
+        elif n_tps < 20:
+            message = 'R005: Intent Does Not Have Minimum Training '\
+                f'Phrases. ({n_tps} / 20)'
+
+            stats.total_issues += 1
+            self.intent_logger_output(intent, message)
 
         return stats
