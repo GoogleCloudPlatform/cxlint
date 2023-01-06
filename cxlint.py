@@ -6,7 +6,7 @@ import json
 import logging
 import re
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Any
 
 from rules import RulesDefinitions # pylint: disable=E0401
@@ -20,7 +20,7 @@ logging.basicConfig(
 
 # configparser
 config = configparser.ConfigParser()
-config.read('.cxlintrc')
+config.read('/Users/pmarlow/eng/att/cxlint/.cxlintrc')
 
 @dataclass
 class LintStats:
@@ -29,6 +29,10 @@ class LintStats:
     total_inspected: int = 0
     total_flows: int = 0
     total_pages: int = 0
+    total_intents: int = 0
+    total_training_phrases: int = 0
+    total_entities: int = 0
+    total_route_groups: int = 0
 
 @dataclass
 class Flow:
@@ -57,6 +61,23 @@ class Fulfillment:
     resource: str = None
     verbose: bool = False
 
+@dataclass
+class Intent:
+    """Used to track current Intent Attributes."""
+    display_name: str = None
+    dir_path: str = None
+    metadata_file: str = None
+    labels: Dict[str, str] = None
+    description: str = None
+    training_phrases: Dict[str, Any] = field(default_factory=dict)
+    verbose: bool = False
+    data: Dict[str, Any] = None
+
+# @dataclass
+# class TrainingPhrases:
+#     """Used to track current Training Phrase Attributes."""
+
+
 class CxLint:
     """Core CX Linter methods and functions."""
     def __init__(
@@ -78,10 +99,62 @@ class CxLint:
         return msg_dict
 
     @staticmethod
+    def calculate_rating(total_issues: int, total_inspected: int) -> float:
+        """Calculate the final rating for the linter stats."""
+        rating = (1-(total_issues/total_inspected))*10
+
+        return rating
+
+    @staticmethod
+    def parse_lang_code(lang_code_path: str) -> str:
+        """Extract the language_code from the given file path."""
+
+        first_parse = lang_code_path.split('/')[-1]
+        lang_code = first_parse.split('.')[0]
+
+        return lang_code
+
+    @staticmethod
+    def build_lang_code_paths(intent: Intent):
+        """Builds dict of lang codes and file locations.
+
+        The language_codes and paths for each file are stored in a dictionary
+        inside of the Intent dataclass. This dict is access later to lint each
+        file and provide reporting based on each language code.
+        """
+        training_phrases_path = intent.dir_path + '/trainingPhrases'
+
+        for lang_file in os.listdir(training_phrases_path):
+            lang_code = lang_file.split('.')[0]
+            lang_code_path = f'{training_phrases_path}/{lang_file}'
+            intent.training_phrases[lang_code] = {'file_path': lang_code_path}
+
+    @staticmethod
+    def build_intent_path_list(agent_local_path: str):
+        """Builds a list of dirs, each representing an Intent directory.
+
+        Ex: /path/to/agent/intents/<intent_dir>
+
+        This dir path can be used to find the next level of information
+        in the directory by appending the appropriate next dir structures like:
+        - <intent_name>.json, for the Intent object metadata
+        - /trainingPhrases, for the Training Phrases dir
+        """
+        intents_path = agent_local_path + '/intents'
+
+        intent_paths = []
+
+        for intent_dir in os.listdir(intents_path):
+            intent_dir_path = f'{intents_path}/{intent_dir}'
+            intent_paths.append(intent_dir_path)
+
+        return intent_paths
+
+    @staticmethod
     def build_flow_path_list(agent_local_path: str):
         """Builds a list of dirs, each representing a Flow directory.
 
-        Ex: /path/to/something/flows/<flow_dir>
+        Ex: /path/to/agent/flows/<flow_dir>
 
         This dir path can then be used to find the next level of information
         in the directory by appending the appropriate next dir structures like:
@@ -104,7 +177,7 @@ class CxLint:
     def build_page_path_list(flow_path: str):
         """Builds a list of files, each representing a Page.
 
-        Ex: /path/to/something/flows/<flow_dir>/pages/<page_name>.json
+        Ex: /path/to/agent/flows/<flow_dir>/pages/<page_name>.json
         """
         pages_path = f'{flow_path}/pages'
 
@@ -116,16 +189,16 @@ class CxLint:
 
         return page_paths
 
-    @staticmethod
-    def update_stats(
-        local_issues: int,
-        local_inspected: int,
-        stats: LintStats) -> LintStats:
-        """Update the current LintStats object."""
-        stats.total_issues += local_issues
-        stats.total_inspected += local_inspected
+    # @staticmethod
+    # def update_stats(
+    #     local_issues: int,
+    #     local_inspected: int,
+    #     stats: LintStats) -> LintStats:
+    #     """Update the current LintStats object."""
+    #     stats.total_issues += local_issues
+    #     stats.total_inspected += local_inspected
 
-        return stats
+    #     return stats
 
     @staticmethod
     def parse_filepath(in_path: str, resource_type: str) -> str:
@@ -133,15 +206,16 @@ class CxLint:
 
         regex_map = {
             'flow': r'.*\/flows\/([^\/]*)',
-            'page': r'.*\/pages\/([^\/]*)\.'
+            'page': r'.*\/pages\/([^\/]*)\.',
+            'intent': r'.*\/intents\/([^\/]*)'
         }
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
-        # resource_name = in_path.split('/')[-1]
 
         return resource_name
 
     def collect_transition_route_trigger(self, route):
         """Inspect route and return all Intent/Condition info."""
+        # TODO: Clean up refactor elif logic
 
         if 'intent' in route and 'condition' in route:
             trigger = 'intent+condition'
@@ -178,15 +252,15 @@ class CxLint:
         route.verbose = self.verbose
         # total_issues = 0
 
-        # Closed-Choice Alternative
+        # closed-choice-alternative
         if self.disable_map.get('closed-choice-alternative', True):
             stats = self.rules.closed_choice_alternative_parser(route, stats)
 
-        # Wh- Questions
+        # wh-questions
         if self.disable_map.get('wh-questions', True):
             stats = self.rules.wh_questions(route, stats)
 
-        # Clarifying Questions
+        # clarifying-questions
         if self.disable_map.get('clarifying-questions', True):
             stats = self.rules.clarifying_questions(route, stats)
 
@@ -302,6 +376,59 @@ class CxLint:
 
         return stats
 
+    def lint_intent_metadata(self, intent: Intent, stats: LintStats):
+        """Lint the metadata file for a single Intent."""
+        intent.metadata_file = f'{intent.dir_path}/{intent.display_name}.json'
+
+        with open(intent.metadata_file, 'r', encoding='UTF-8') as meta_file:
+            intent.data = json.load(meta_file)
+            intent.labels = intent.data.get('labels', None)
+            intent.description = intent.data.get('description', None)
+
+            # TODO: Linting rules for Intent Metadata
+
+        return stats
+
+    def lint_language_codes(self, intent: Intent, stats: LintStats):
+        """Executes all Training Phrase based linter rules."""
+
+        for lang_code in intent.training_phrases:
+            tp_file = intent.training_phrases[lang_code]['file_path']
+
+            with open(tp_file, 'r', encoding='UTF-8') as tps:
+                data = json.load(tps)
+                intent.training_phrases[lang_code]['tps'] = data['trainingPhrases']
+
+                # intent-min-tps
+                if self.disable_map.get('intent-min-tps', True):
+                    stats = self.rules.min_tps_head_intent(
+                        intent, lang_code, stats)
+
+
+        return stats
+
+    def lint_training_phrases(self, intent: Intent, stats: LintStats):
+        """Lint the Training Phrase dir for a single Intent."""
+        if 'trainingPhrases' in os.listdir(intent.dir_path):
+            self.build_lang_code_paths(intent)
+            stats = self.lint_language_codes(intent, stats)
+
+        # intent-missing-tps
+        elif self.disable_map.get('intent-missing-tps', True):
+            stats = self.rules.missing_training_phrases(intent, stats)
+
+        return stats
+
+
+    def lint_intent(self, intent: Intent, stats: LintStats):
+        """Lint a single Intent directory and associated files."""
+        intent.display_name = self.parse_filepath(intent.dir_path, 'intent')
+
+        stats = self.lint_intent_metadata(intent, stats)
+        stats = self.lint_training_phrases(intent, stats)
+
+        return stats
+
     def lint_pages_directory(self, flow: Flow, stats: LintStats):
         """Linting the Pages dir inside a specific Flow dir."""
         # start_message = f'{"*" * 10} Begin Page Linter'
@@ -349,10 +476,65 @@ class CxLint:
             stats = self.lint_flow(flow, stats)
 
         header = "-" * 20
-        rating = (1-(stats.total_issues/stats.total_inspected))*10
+        rating = self.calculate_rating(
+            stats.total_issues, stats.total_inspected)
 
         end_message = f'\n{header}\n{stats.total_flows} Flows linted.'\
             f'\n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} candidates inspected.'\
+            f'{stats.total_inspected} fulfillments inspected.'\
             f'\nYour Agent Flows rated at {rating:.2f}/10.0\n\n'
         logging.info(end_message)
+
+    def lint_intents_directory(self, agent_local_path: str):
+        """Linting the top level Intents Dir in the JSON Package structure.
+
+        The following files/dirs exist under the `intents` dir:
+        - <intent_display_name> Directory
+          - trainingPhrases
+            - <language-code>.json
+          - <intent_display_name> Object
+
+        In Dialogflow CX, the Training Phrases of each Intent are stored in
+        individual .json files by language code under each Intent Display
+        Name. In this method, we will lint all Intent dirs, including the
+        training phrase files and metadata objects for each Intent.
+        """
+        start_message = f'{"#" * 10} Begin Intents Directory Linter'
+        logging.info(start_message)
+
+        stats = LintStats()
+
+        # Create a list of all Intent paths to iter through
+        intent_paths = self.build_intent_path_list(agent_local_path)
+        stats.total_intents = len(intent_paths)
+
+        # Linting Starts Here
+        for intent_path in intent_paths:
+            intent = Intent()
+            intent.verbose = self.verbose
+            intent.dir_path = intent_path
+            stats = self.lint_intent(intent, stats)
+            stats.total_inspected += 1
+
+        header = "-" * 20
+        rating = self.calculate_rating(
+            stats.total_issues, stats.total_inspected)
+
+        end_message = f'\n{header}\n{stats.total_intents} Intents linted.'\
+            f'\n{stats.total_issues} issues found out of '\
+            f'{stats.total_inspected} Intents inspected.'\
+            f'\nYour Agent Intents rated at {rating:.2f}/10.0\n\n'
+        logging.info(end_message)
+
+    def lint_agent(self, agent_local_path: str):
+        """Linting the entire CX Agent and all resource directories."""
+        # agent_file = agent_local_path + '/agent.json'
+        # with open(agent_file, 'r', encoding='UTF-8') as agent_data:
+        #     data = json.load(agent_data)
+
+        start_message = f'{"=" * 5} LINTING AGENT {"=" * 5}\n'
+        logging.info(start_message)
+
+
+        self.lint_flows_directory(agent_local_path)
+        self.lint_intents_directory(agent_local_path)
