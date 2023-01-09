@@ -8,12 +8,15 @@ class GcsUtils:
     """Utils for Cloud Storage and local file manipulation."""
     def __init__(
         self,
-        creds_path: str,
-        project_id: str):
+        creds_path: str = None,
+        project_id: str = None):
 
         if creds_path and project_id:
             self.creds = service_account.Credentials.from_service_account_file(creds_path)
             self.gcs_client = storage.Client(credentials=self.creds, project=project_id)
+
+        else:
+            self.gcs_client = storage.Client()
 
     @staticmethod
     def unzip(agent_zip_file_path: str, extract_path: str):
@@ -32,7 +35,7 @@ class GcsUtils:
 
         return is_gcs_file
 
-    def download_gcs(self, gcs_path: str):
+    def download_gcs(self, gcs_path: str, local_path: str = None):
         """Downloads the specified GCS file to local machine."""
         path = gcs_path.split('//')[1]
         bucket = path.split('/', 1)[0]
@@ -40,6 +43,10 @@ class GcsUtils:
         file_name = gcs_object.split('/')[-1]
         bucket = self.gcs_client.bucket(bucket)
         blob = storage.Blob(gcs_object, bucket)
+
+        if local_path:
+            file_name = local_path + '/' + file_name
+
         blob.download_to_filename(file_name)
 
         return file_name

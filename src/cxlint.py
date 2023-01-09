@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Any
 
 from rules import RulesDefinitions # pylint: disable=E0401
+from gcs_utils import GcsUtils
 # from file_traversal import FileTraversal # pylint: disable=E0401
 
 # logging config
@@ -85,6 +86,7 @@ class CxLint:
         verbose: bool = False):
 
         self.rules = RulesDefinitions()
+        self.gcs = GcsUtils()
         self.verbose = verbose
         self.disable_map = self.load_message_controls()
 
@@ -188,17 +190,6 @@ class CxLint:
             page_paths.append(page_file_path)
 
         return page_paths
-
-    # @staticmethod
-    # def update_stats(
-    #     local_issues: int,
-    #     local_inspected: int,
-    #     stats: LintStats) -> LintStats:
-    #     """Update the current LintStats object."""
-    #     stats.total_issues += local_issues
-    #     stats.total_inspected += local_inspected
-
-    #     return stats
 
     @staticmethod
     def parse_filepath(in_path: str, resource_type: str) -> str:
