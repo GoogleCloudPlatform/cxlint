@@ -1,5 +1,6 @@
 # Specific Files
-a2b.py
+data/
+*.zip
 
 *.py[cod]
 *.sw[op]
