@@ -83,12 +83,16 @@ class CxLint:
     """Core CX Linter methods and functions."""
     def __init__(
         self,
-        verbose: bool = False):
+        verbose: bool = False,
+        load_gcs: bool = False):
 
         self.rules = RulesDefinitions()
-        self.gcs = GcsUtils()
         self.verbose = verbose
         self.disable_map = self.load_message_controls()
+
+        if load_gcs:
+            self.gcs = GcsUtils()
+
 
     @staticmethod
     def load_message_controls() -> Dict[str,str]:
@@ -505,7 +509,7 @@ class CxLint:
             intent.verbose = self.verbose
             intent.dir_path = intent_path
             stats = self.lint_intent(intent, stats)
-            stats.total_inspected += 1
+            # stats.total_inspected += 1
 
         header = "-" * 20
         rating = self.calculate_rating(
@@ -513,7 +517,7 @@ class CxLint:
 
         end_message = f'\n{header}\n{stats.total_intents} Intents linted.'\
             f'\n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} Intents inspected.'\
+            f'{stats.total_inspected} inspected.'\
             f'\nYour Agent Intents rated at {rating:.2f}/10.0\n\n'
         logging.info(end_message)
 
