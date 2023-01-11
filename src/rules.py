@@ -61,6 +61,7 @@ class RulesDefinitions:
 
         return hid
 
+    # RESPONSE MESSAGE RULES
     def closed_choice_alternative_parser(self, route, stats) -> object:
         """Identifies a Closed Choice Alternative Question."""
         message = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
@@ -113,10 +114,13 @@ class RulesDefinitions:
 
         return stats
 
+
+    # INTENT RULES
     def missing_training_phrases(self, intent, stats) -> object:
         """Checks for Intents that are Missing Training Phrases."""
         message = 'R004: Intent is Missing Training Phrases.'
 
+        stats.total_inspected += 1
         stats.total_issues += 1
         self.intent_logger_output(intent, message)
 
@@ -125,6 +129,7 @@ class RulesDefinitions:
     def min_tps_head_intent(self, intent, lang_code, stats) -> object:
         """Determines if Intent has min recommended training phrases."""
         n_tps = len(intent.training_phrases[lang_code]['tps'])
+        stats.total_inspected += 1
 
         hid = self.check_if_head_intent(intent)
 
