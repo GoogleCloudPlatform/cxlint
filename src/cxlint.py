@@ -295,7 +295,7 @@ class CxLint:
         cleaned_tps = []
 
         for tp in tp_data['trainingPhrases']:
-            parts_list = [part['text'] for part in tp['parts']]
+            parts_list = [part['text'].lower() for part in tp['parts']]
             cleaned_tps.append("".join(parts_list))
 
         return cleaned_tps 
@@ -562,7 +562,10 @@ class CxLint:
             tc.test_config = tc.data.get('testConfig', None)
 
         # TODO pmarlow: Remove hard coded tag filter
-        if tc.tags and '#required' in tc.tags:
+        if (
+            tc.tags
+            and '#required' in tc.tags
+            and tc.match_pattern in tc.display_name):
             stats.total_test_cases += 1
 
             tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
@@ -677,7 +680,10 @@ class CxLint:
             f'\nYour Agent Intents rated at {rating:.2f}/10.0\n\n'
         logging.info(end_message)
     
-    def lint_test_cases_directory(self, agent_local_path: str):
+    def lint_test_cases_directory(
+        self,
+        agent_local_path: str,
+        test_case_pattern: str):
         """Linting the test cases dir in the JSON package structure."""
         start_message = f'{"#" * 10} Begin Test Cases Directory Linter'
         logging.info(start_message)
@@ -692,6 +698,7 @@ class CxLint:
         # Linting Starts Here
         for test_case in test_case_paths:
             tc = TestCase()
+            tc.match_pattern = test_case_pattern
             tc.verbose = self.verbose
             tc.dir_path = test_case
             tc.agent_path = agent_local_path
@@ -707,7 +714,10 @@ class CxLint:
             f'\nYour Agent Test Cases rated at {rating:.2f}/10.0\n\n'
         logging.info(end_message)
 
-    def lint_agent(self, agent_local_path: str):
+    def lint_agent(
+        self,
+        agent_local_path: str,
+        test_case_pattern: str = None):
         """Linting the entire CX Agent and all resource directories."""
         # agent_file = agent_local_path + '/agent.json'
         # with open(agent_file, 'r', encoding='UTF-8') as agent_data:
@@ -719,4 +729,4 @@ class CxLint:
 
         self.lint_flows_directory(agent_local_path)
         self.lint_intents_directory(agent_local_path)
-        self.lint_test_cases_directory(agent_local_path)
+        self.lint_test_cases_directory(agent_local_path, test_case_pattern)
