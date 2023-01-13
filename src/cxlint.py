@@ -104,6 +104,7 @@ class CxLint:
         self.rules = RulesDefinitions()
         self.verbose = verbose
         self.disable_map = self.load_message_controls()
+        self.test_case_tag_inclusion = self.load_test_case_tag_inclusion()
         self.intent_map_for_tcs = None
 
         if load_gcs:
@@ -119,6 +120,16 @@ class CxLint:
         msg_dict = {msg:False for msg in msg_list}
 
         return msg_dict
+
+    @staticmethod
+    def load_test_case_tag_inclusion() -> Dict[str,str]:
+        """Loads the config file for test cases into a map."""
+        tag_list = config['TEST CASE TAGS']['include']
+        
+        # .replace(
+        #     '\n', '').split(',')
+
+        return tag_list
 
     @staticmethod
     def calculate_rating(total_issues: int, total_inspected: int) -> float:
@@ -539,26 +550,33 @@ class CxLint:
 
     def lint_test_case(self, tc: TestCase, stats: LintStats):
         """Lint a single Test Case file."""
+
+        # TODO pmarlow: Implement Test Case config extraction
         
         with open(tc.dir_path, 'r', encoding='UTF-8') as tc_file:
             tc.data = json.load(tc_file)
             tc.display_name = tc.data.get('displayName', None)
+            tc.tags = tc.data.get('tags', None)
             tc.conversation_turns = tc.data.get(
                 'testCaseConversationTurns', None)
             tc.test_config = tc.data.get('testConfig', None)
 
-        tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
-        if tc.intent_tp_pairs:
+        # TODO pmarlow: Remove hard coded tag filter
+        if tc.tags and '#required' in tc.tags:
+            stats.total_test_cases += 1
 
-            tc.associated_intent_data = self.gather_intent_tps(tc)
+            tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
+            if tc.intent_tp_pairs:
 
-            if tc.associated_intent_data:
-                # explicit-tps-in-tcs
-                stats = self.rules.explicit_tps_in_tcs(tc, stats)
+                tc.associated_intent_data = self.gather_intent_tps(tc)
 
-            else:
-                # invalid-intent-in-tcs
-                stats = self.rules.invalid_intent_in_tcs(tc, stats)
+                if tc.associated_intent_data:
+                    # explicit-tps-in-tcs
+                    stats = self.rules.explicit_tps_in_tcs(tc, stats)
+
+                else:
+                    # invalid-intent-in-tcs
+                    stats = self.rules.invalid_intent_in_tcs(tc, stats)
 
         return stats
 
@@ -667,7 +685,7 @@ class CxLint:
         stats = LintStats()
 
         test_case_paths = self.build_test_case_path_list(agent_local_path)
-        stats.total_test_cases = len(test_case_paths)
+        # stats.total_test_cases = len(test_case_paths)
 
         # self.intent_map_for_tcs = self.get_test_case_intent_data(agent_local_path)
 

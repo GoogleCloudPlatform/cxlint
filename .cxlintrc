@@ -21,3 +21,11 @@ disable=
 #    intent-missing-tps,
 #    intent-min-tps,
 #    explicit-tps-in-tcs
+
+[TEST CASE TAGS]
+include=
+    #required,
+    #cloud_functions
+
+[TEST CASE INTENTS]
+include=
