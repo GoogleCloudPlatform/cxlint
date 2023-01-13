@@ -19,4 +19,5 @@ disable=
 #    wh-questions,
 #    clarifying-questions,
 #    intent-missing-tps,
-#    intent-min-tps
+#    intent-min-tps,
+#    explicit-tps-in-tcs
