@@ -155,8 +155,10 @@ class CxLint:
         test_case_paths = []
 
         for test_case in os.listdir(test_cases_path):
-            test_case_path = f'{test_cases_path}/{test_case}'
-            test_case_paths.append(test_case_path)
+            end = test_case.split('.')[-1]
+            if end == 'json':
+                test_case_path = f'{test_cases_path}/{test_case}'
+                test_case_paths.append(test_case_path)
 
         return test_case_paths
 
