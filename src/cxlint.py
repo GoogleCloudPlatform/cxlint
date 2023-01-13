@@ -34,6 +34,8 @@ class LintStats:
     total_training_phrases: int = 0
     total_entities: int = 0
     total_route_groups: int = 0
+    total_test_cases: int = 0
+    total_webhooks: int = 0
 
 @dataclass
 class Flow:
@@ -74,6 +76,19 @@ class Intent:
     verbose: bool = False
     data: Dict[str, Any] = None
 
+@dataclass
+class TestCase:
+    """Used to track current Test Case Attributes."""
+    display_name: str = None
+    tags: List[str] = None
+    verbose: bool = False
+    data: Dict[str, Any] = None
+    test_config: Dict[str, Any] = None
+    conversation_turns: List[Any] = None
+    intent_tp_pairs: List[str] = None
+    associated_intent_data: Dict[str, Any] = None
+    agent_path: str = None
+
 # @dataclass
 # class TrainingPhrases:
 #     """Used to track current Training Phrase Attributes."""
@@ -89,6 +104,7 @@ class CxLint:
         self.rules = RulesDefinitions()
         self.verbose = verbose
         self.disable_map = self.load_message_controls()
+        self.intent_map_for_tcs = None
 
         if load_gcs:
             self.gcs = GcsUtils()
@@ -119,6 +135,19 @@ class CxLint:
         lang_code = first_parse.split('.')[0]
 
         return lang_code
+
+    @staticmethod
+    def build_test_case_path_list(agent_local_path: str):
+        """Builds a list of files, each representing a test case."""
+        test_cases_path = agent_local_path + '/testCases'
+
+        test_case_paths = []
+
+        for test_case in os.listdir(test_cases_path):
+            test_case_path = f'{test_cases_path}/{test_case}'
+            test_case_paths.append(test_case_path)
+
+        return test_case_paths
 
     @staticmethod
     def build_lang_code_paths(intent: Intent):
@@ -207,6 +236,90 @@ class CxLint:
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
 
         return resource_name
+
+    @staticmethod
+    def get_test_case_intent_phrase_pair(tc: TestCase):
+        """Parse Test Case and return a list of intents in use."""
+        intent_tp_pairs = []
+
+        if tc.conversation_turns:
+            for turn in tc.conversation_turns:
+                user = turn['userInput']
+                agent = turn['virtualAgentOutput']
+                intent = agent.get('triggeredIntent', None)
+                phrase = user.get('input', None)
+
+                text = phrase.get('text', None)
+                if text:
+                    text = text['text']
+
+                if intent and text:
+                    intent_tp_pairs.append(
+                        {'training_phrase': text,
+                        'intent': intent['name']}
+                        )
+
+        return intent_tp_pairs
+
+    @staticmethod
+    def get_test_case_intent_data(agent_local_path: str):
+        """Collect all Intent Files and Training Phrases for Test Case."""
+        # TODO (pmarlow) consolidate into build_intent_paths
+
+        intents_path = agent_local_path + '/intents'
+
+        intent_paths = []
+
+        for intent_dir in os.listdir(intents_path):
+            intent_dir_path = f'{intents_path}/{intent_dir}'
+            intent_paths.append(
+                {'intent': intent_dir,
+                'file_path': intent_dir_path})
+
+        return intent_paths
+
+    @staticmethod
+    def flatten_tp_data(tp_data: List[Any]):
+        """Flatten the Training Phrase proto to a list of strings."""
+        cleaned_tps = []
+
+        for tp in tp_data['trainingPhrases']:
+            parts_list = [part['text'] for part in tp['parts']]
+            cleaned_tps.append("".join(parts_list))
+
+        return cleaned_tps 
+
+
+    def gather_intent_tps(self, tc: TestCase):
+        # TODO Refactor
+        """Collect all TPs associated with Intent data in Test Case."""
+        tc.associated_intent_data = {}
+
+        for pair in tc.intent_tp_pairs:
+            intent_dir = tc.agent_path + '/intents/' + pair['intent']
+
+            try:
+                if 'trainingPhrases' in os.listdir(intent_dir):
+
+                    training_phrases_path = intent_dir + '/trainingPhrases'
+
+                    for lang_file in os.listdir(training_phrases_path):
+                        lang_code = lang_file.split('.')[0]
+                        lang_code_path = f'{training_phrases_path}/{lang_file}'
+
+                        with open(lang_code_path, 'r', encoding='UTF-8') as tp_file:
+                            tp_data = json.load(tp_file)
+                            cleaned_tps = self.flatten_tp_data(tp_data)
+
+
+                        tc.associated_intent_data[pair['intent']] = cleaned_tps
+
+            except Exception as err:
+                tc.associated_intent_data = None
+                continue
+
+        return tc.associated_intent_data
+
 
     def collect_transition_route_trigger(self, route):
         """Inspect route and return all Intent/Condition info."""
@@ -424,6 +537,31 @@ class CxLint:
 
         return stats
 
+    def lint_test_case(self, tc: TestCase, stats: LintStats):
+        """Lint a single Test Case file."""
+        
+        with open(tc.dir_path, 'r', encoding='UTF-8') as tc_file:
+            tc.data = json.load(tc_file)
+            tc.display_name = tc.data.get('displayName', None)
+            tc.conversation_turns = tc.data.get(
+                'testCaseConversationTurns', None)
+            tc.test_config = tc.data.get('testConfig', None)
+
+        tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
+        if tc.intent_tp_pairs:
+
+            tc.associated_intent_data = self.gather_intent_tps(tc)
+
+            if tc.associated_intent_data:
+                # explicit-tps-in-tcs
+                stats = self.rules.explicit_tps_in_tcs(tc, stats)
+
+            else:
+                # invalid-intent-in-tcs
+                stats = self.rules.invalid_intent_in_tcs(tc, stats)
+
+        return stats
+
     def lint_pages_directory(self, flow: Flow, stats: LintStats):
         """Linting the Pages dir inside a specific Flow dir."""
         # start_message = f'{"*" * 10} Begin Page Linter'
@@ -520,6 +658,36 @@ class CxLint:
             f'{stats.total_inspected} inspected.'\
             f'\nYour Agent Intents rated at {rating:.2f}/10.0\n\n'
         logging.info(end_message)
+    
+    def lint_test_cases_directory(self, agent_local_path: str):
+        """Linting the test cases dir in the JSON package structure."""
+        start_message = f'{"#" * 10} Begin Test Cases Directory Linter'
+        logging.info(start_message)
+
+        stats = LintStats()
+
+        test_case_paths = self.build_test_case_path_list(agent_local_path)
+        stats.total_test_cases = len(test_case_paths)
+
+        # self.intent_map_for_tcs = self.get_test_case_intent_data(agent_local_path)
+
+        # Linting Starts Here
+        for test_case in test_case_paths:
+            tc = TestCase()
+            tc.verbose = self.verbose
+            tc.dir_path = test_case
+            tc.agent_path = agent_local_path
+            stats = self.lint_test_case(tc, stats)
+
+        header = "-" * 20
+        rating = self.calculate_rating(
+            stats.total_issues, stats.total_inspected)
+
+        end_message = f'\n{header}\n{stats.total_test_cases} Test Cases linted.'\
+            f'\n{stats.total_issues} issues found out of '\
+            f'{stats.total_inspected} inspected.'\
+            f'\nYour Agent Test Cases rated at {rating:.2f}/10.0\n\n'
+        logging.info(end_message)
 
     def lint_agent(self, agent_local_path: str):
         """Linting the entire CX Agent and all resource directories."""
@@ -533,3 +701,4 @@ class CxLint:
 
         self.lint_flows_directory(agent_local_path)
         self.lint_intents_directory(agent_local_path)
+        self.lint_test_cases_directory(agent_local_path)

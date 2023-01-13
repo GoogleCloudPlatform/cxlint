@@ -46,6 +46,23 @@ class RulesDefinitions:
                 message)
 
     @staticmethod
+    def test_case_logger_output(
+        tc, phrase: str, intent: str, message: str) -> None:
+        """Consolidated logging method for Test Case rules."""
+        if tc.verbose:
+            logging.info(
+                '%s:%s:%s:%s',
+                tc.display_name,
+                phrase,
+                intent,
+                message)
+        else:
+            logging.info(
+                '%s:%s',
+                tc.display_name,
+                message)
+
+    @staticmethod
     def check_if_head_intent(intent):
         """Checks if Intent is Head Intent based on labels and name."""
         hid = False
@@ -146,5 +163,35 @@ class RulesDefinitions:
 
             stats.total_issues += 1
             self.intent_logger_output(intent, message)
+
+        return stats
+
+    # TEST CASE RULES
+    def explicit_tps_in_tcs(self, tc, stats) -> object:
+        """Checks that user utterance is an explicit intent training phrase."""
+        
+        for pair in tc.intent_tp_pairs:
+            stats.total_inspected += 1
+
+            intent = pair['intent']
+            phrase = pair['training_phrase']
+            tps = tc.associated_intent_data[intent]
+
+            if phrase not in tps:
+                message = 'R007: Explicit Training Phrase Not in Test Case'
+
+                stats.total_issues += 1
+                self.test_case_logger_output(tc, phrase, intent, message)
+
+        return stats
+
+    def invalid_intent_in_tcs(self, tc, stats) -> object:
+        """Check that a listed Intent in the Test Case exists in the agent."""
+
+        stats.total_inspected += 1
+        stats.total_issues += 1
+
+        message = 'R008: Invalid Intent in Test Case'
+        self.test_case_logger_output(tc, None, None, message)
 
         return stats
