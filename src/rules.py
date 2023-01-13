@@ -51,7 +51,7 @@ class RulesDefinitions:
         """Consolidated logging method for Test Case rules."""
         if tc.verbose:
             logging.info(
-                '%s:%s:%s:%s',
+                '%s: \nTraining Phrase: %s \nIntent: %s:\n%s\n',
                 tc.display_name,
                 phrase,
                 intent,
