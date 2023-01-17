@@ -7,7 +7,7 @@ import logging
 import re
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
 
 from rules import RulesDefinitions # pylint: disable=E0401
 from gcs_utils import GcsUtils
@@ -21,6 +21,7 @@ logging.basicConfig(
 
 # configparser
 config = configparser.ConfigParser()
+config.sections()
 config.read('../.cxlintrc')
 
 @dataclass
@@ -79,15 +80,16 @@ class Intent:
 @dataclass
 class TestCase:
     """Used to track current Test Case Attributes."""
-    display_name: str = None
-    tags: List[str] = None
-    verbose: bool = False
-    data: Dict[str, Any] = None
-    test_config: Dict[str, Any] = None
-    conversation_turns: List[Any] = None
-    intent_tp_pairs: List[str] = None
     associated_intent_data: Dict[str, Any] = None
     agent_path: str = None
+    conversation_turns: List[Any] = None
+    data: Dict[str, Any] = None
+    display_name: str = None
+    intent_tp_pairs: List[str] = None
+    qualified: bool = False
+    tags: List[str] = None
+    test_config: Dict[str, Any] = None
+    verbose: bool = False
 
 # @dataclass
 # class TrainingPhrases:
@@ -124,17 +126,28 @@ class CxLint:
     @staticmethod
     def load_test_case_tag_inclusion() -> Dict[str,str]:
         """Loads the config file for test cases into a map."""
-        tag_list = config['TEST CASE TAGS']['include']
-        
-        # .replace(
-        #     '\n', '').split(',')
+        tag_list = config['TEST CASE TAGS']['include'].replace(
+            '\n', '').split(',')
+
+        tag_list = [f'#{tag}' for tag in tag_list]
 
         return tag_list
 
     @staticmethod
+    def load_test_case_pattern() -> str:
+        """Loadsd the matching pattern for test case display names."""
+        pattern = config['TEST CASE DISPLAY NAME PATTERN']['pattern']
+
+        return pattern
+
+    @staticmethod
     def calculate_rating(total_issues: int, total_inspected: int) -> float:
         """Calculate the final rating for the linter stats."""
-        rating = (1-(total_issues/total_inspected))*10
+        if total_inspected > 0:
+            rating = (1-(total_issues/total_inspected))*10
+
+        else:
+            rating = 10
 
         return rating
 
@@ -215,7 +228,6 @@ class CxLint:
         flow_paths = []
 
         for flow_dir in os.listdir(flows_path):
-            # start_page_flow_file = flow_dir + '.json'
             flow_dir_path = f'{flows_path}/{flow_dir}'
             flow_paths.append(flow_dir_path)
 
@@ -371,7 +383,6 @@ class CxLint:
         """Executes all Text-based Fulfillment linter rules."""
 
         route.verbose = self.verbose
-        # total_issues = 0
 
         # closed-choice-alternative
         if self.disable_map.get('closed-choice-alternative', True):
@@ -550,6 +561,24 @@ class CxLint:
 
         return stats
 
+    def qualify_test_case(self, tc: TestCase):
+        """Ensure Test Case meets all required filters and prerequisites."""
+        tag_filter = self.load_test_case_tag_inclusion()
+        tag_pattern = self.load_test_case_pattern()
+
+        if tc.tags:
+            tag_match = set(tc.tags).intersection(set(tag_filter))
+
+            if tag_match:
+                tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
+
+                if tc.intent_tp_pairs:
+                    tc.associated_intent_data = self.gather_intent_tps(tc)
+                    tc.qualified = True
+
+        return tc
+
+
     def lint_test_case(self, tc: TestCase, stats: LintStats):
         """Lint a single Test Case file."""
 
@@ -563,25 +592,40 @@ class CxLint:
                 'testCaseConversationTurns', None)
             tc.test_config = tc.data.get('testConfig', None)
 
-        # TODO pmarlow: Remove hard coded tag filter
-        if (
-            tc.tags
-            and '#required' in tc.tags
-            and tc.match_pattern in tc.display_name):
+            tc = self.qualify_test_case(tc)
+
+        if tc.qualified and tc.associated_intent_data:
             stats.total_test_cases += 1
 
-            tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
-            if tc.intent_tp_pairs:
+            # R007 explicit-tps-in-test-cases
+            stats = self.rules.explicit_tps_in_tcs(tc, stats)
 
-                tc.associated_intent_data = self.gather_intent_tps(tc)
+        elif tc.qualified and not tc.associated_intent_data:
+            stats.total_test_cases += 1
 
-                if tc.associated_intent_data:
-                    # explicit-tps-in-tcs
-                    stats = self.rules.explicit_tps_in_tcs(tc, stats)
+            # R008 invalid-intent-in-test-cases
+            stats = self.rules.invalid_intent_in_tcs(tc, stats)
 
-                else:
-                    # invalid-intent-in-tcs
-                    stats = self.rules.invalid_intent_in_tcs(tc, stats)
+
+        # # TODO pmarlow: Remove hard coded tag filter
+        # if (
+        #     tc.tags
+        #     and '#required' in tc.tags
+        #     and tc.match_pattern in tc.display_name):
+        #     stats.total_test_cases += 1
+
+        #     tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
+        #     if tc.intent_tp_pairs:
+
+        #         tc.associated_intent_data = self.gather_intent_tps(tc)
+
+                # if tc.associated_intent_data:
+                #     # R007 explicit-tps-in-test-cases
+                #     stats = self.rules.explicit_tps_in_tcs(tc, stats)
+
+                # else:
+                #     # R008 invalid-intent-in-test-cases
+                #     stats = self.rules.invalid_intent_in_tcs(tc, stats)
 
         return stats
 
@@ -638,7 +682,7 @@ class CxLint:
         end_message = f'\n{header}\n{stats.total_flows} Flows linted.'\
             f'\n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} fulfillments inspected.'\
-            f'\nYour Agent Flows rated at {rating:.2f}/10.0\n\n'
+            f'\nYour Agent Flows rated at {rating:.2f}/10\n\n'
         logging.info(end_message)
 
     def lint_intents_directory(self, agent_local_path: str):
@@ -679,7 +723,7 @@ class CxLint:
         end_message = f'\n{header}\n{stats.total_intents} Intents linted.'\
             f'\n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} inspected.'\
-            f'\nYour Agent Intents rated at {rating:.2f}/10.0\n\n'
+            f'\nYour Agent Intents rated at {rating:.2f}/10\n\n'
         logging.info(end_message)
     
     def lint_test_cases_directory(
@@ -713,7 +757,7 @@ class CxLint:
         end_message = f'\n{header}\n{stats.total_test_cases} Test Cases linted.'\
             f'\n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} inspected.'\
-            f'\nYour Agent Test Cases rated at {rating:.2f}/10.0\n\n'
+            f'\nYour Agent Test Cases rated at {rating:.2f}/10\n\n'
         logging.info(end_message)
 
     def lint_agent(
