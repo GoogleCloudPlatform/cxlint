@@ -20,12 +20,24 @@ disable=
 #    clarifying-questions,
 #    intent-missing-tps,
 #    intent-min-tps,
-#    explicit-tps-in-tcs
+#    explicit-tps-in-test-cases
+#    invalid-intent-in-test-cases
+
+
+# For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.
+# The `#` symbol is used as a comment delimiter in config files, so the line 
+# _will not_ be read if you leave the preceeding `# in place.
 
 [TEST CASE TAGS]
 include=
-    #required,
-    #cloud_functions
+    required,
+    cloud_functions
 
+
+# For Test Cases 
 [TEST CASE INTENTS]
 include=
+
+
+[TEST CASE DISPLAY NAME PATTERN]
+pattern='NUS.SB'
