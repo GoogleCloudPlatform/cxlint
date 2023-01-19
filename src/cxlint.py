@@ -82,9 +82,7 @@ class CxLint:
             logging.info(config['TEST CASE TAGS']['include'])
 
         if section == 'TEST CASE DISPLAY NAME PATTERN':
-            config.set(section, 'pattern', data)
-            logging.info(config['TEST CASE DISPLAY NAME PATTERN']['pattern'])
-        
+            config.set(section, 'pattern', data)        
 
     def lint_agent(
         self,
