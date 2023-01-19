@@ -2,16 +2,16 @@
 
 import configparser
 import os
-import json
 import logging
-import re
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Union
 
 from rules import RulesDefinitions # pylint: disable=E0401
+from flows import Flows
+from intents import Intents
+from test_cases import TestCases
 from gcs_utils import GcsUtils
-# from file_traversal import FileTraversal # pylint: disable=E0401
 
 # logging config
 logging.basicConfig(
@@ -22,748 +22,73 @@ logging.basicConfig(
 # configparser
 config = configparser.ConfigParser()
 config.sections()
-config.read('../.cxlintrc')
 
-@dataclass
-class LintStats:
-    """Used to track linter stats for each section processed."""
-    total_issues: int = 0
-    total_inspected: int = 0
-    total_flows: int = 0
-    total_pages: int = 0
-    total_intents: int = 0
-    total_training_phrases: int = 0
-    total_entities: int = 0
-    total_route_groups: int = 0
-    total_test_cases: int = 0
-    total_webhooks: int = 0
-
-@dataclass
-class Flow:
-    """"Used to track current Flow Attributes."""
-    display_name: str = None # Flow Display Name
-    start_page_file: str = None # File Path Location of START_PAGE
-    dir_path: str = None # Full Directory Path for this Flow
-    data: Dict[str, Any] = None
-
-@dataclass
-class Page:
-    """Used to track current Page Attributes."""
-    flow: Flow = None
-    display_name: str = None
-    page_file: str = None
-    data: Dict[str, Any] = None
-    events: List[object] = None
-    routes: List[object] = None
-
-@dataclass
-class Fulfillment:
-    """Used to track current Fulfillment Attributes."""
-    page: Page = None
-    trigger: str = None
-    text: str = None
-    resource: str = None
-    verbose: bool = False
-
-@dataclass
-class Intent:
-    """Used to track current Intent Attributes."""
-    display_name: str = None
-    dir_path: str = None
-    metadata_file: str = None
-    labels: Dict[str, str] = None
-    description: str = None
-    training_phrases: Dict[str, Any] = field(default_factory=dict)
-    verbose: bool = False
-    data: Dict[str, Any] = None
-
-@dataclass
-class TestCase:
-    """Used to track current Test Case Attributes."""
-    associated_intent_data: Dict[str, Any] = None
-    agent_path: str = None
-    conversation_turns: List[Any] = None
-    data: Dict[str, Any] = None
-    display_name: str = None
-    intent_tp_pairs: List[str] = None
-    qualified: bool = False
-    tags: List[str] = None
-    test_config: Dict[str, Any] = None
-    verbose: bool = False
-
-# @dataclass
-# class TrainingPhrases:
-#     """Used to track current Training Phrase Attributes."""
-
+config.read_file(open(os.path.join(os.path.dirname(__file__), '..', '.cxlintrc')))
+# config.read('../.cxlintrc')
 
 class CxLint:
     """Core CX Linter methods and functions."""
     def __init__(
         self,
         verbose: bool = False,
-        load_gcs: bool = False):
-
-        self.rules = RulesDefinitions()
-        self.verbose = verbose
-        self.disable_map = self.load_message_controls()
-        self.test_case_tag_inclusion = self.load_test_case_tag_inclusion()
-        self.intent_map_for_tcs = None
+        load_gcs: bool = False,
+        agent_id: str = None,
+        test_case_pattern: str = None,
+        test_case_tags: Union[List[str], str] = None):
 
         if load_gcs:
             self.gcs = GcsUtils()
 
+        if test_case_pattern:
+            self.update_config(
+                'TEST CASE DISPLAY NAME PATTERN', test_case_pattern)
+
+        if test_case_tags:
+            self.update_config('TEST CASE TAGS', test_case_tags)
+
+        if agent_id:
+            self.update_config('AGENT ID', agent_id)
+
+        self.intents = Intents(verbose, config)
+        self.flows = Flows(verbose, config)
+        self.test_cases = TestCases(verbose, config)
 
     @staticmethod
-    def load_message_controls() -> Dict[str,str]:
-        """Loads the config file for message control into a map."""
-        msg_list = config['MESSAGES CONTROL']['disable'].replace(
-            '\n', '').split(',')
-
-        msg_dict = {msg:False for msg in msg_list}
-
-        return msg_dict
-
-    @staticmethod
-    def load_test_case_tag_inclusion() -> Dict[str,str]:
-        """Loads the config file for test cases into a map."""
-        tag_list = config['TEST CASE TAGS']['include'].replace(
-            '\n', '').split(',')
-
-        tag_list = [f'#{tag}' for tag in tag_list]
-
-        return tag_list
-
-    @staticmethod
-    def load_test_case_pattern() -> str:
-        """Loadsd the matching pattern for test case display names."""
-        pattern = config['TEST CASE DISPLAY NAME PATTERN']['pattern']
-
-        return pattern
-
-    @staticmethod
-    def calculate_rating(total_issues: int, total_inspected: int) -> float:
-        """Calculate the final rating for the linter stats."""
-        if total_inspected > 0:
-            rating = (1-(total_issues/total_inspected))*10
-
-        else:
-            rating = 10
-
-        return rating
-
-    @staticmethod
-    def parse_lang_code(lang_code_path: str) -> str:
-        """Extract the language_code from the given file path."""
-
-        first_parse = lang_code_path.split('/')[-1]
-        lang_code = first_parse.split('.')[0]
-
-        return lang_code
-
-    @staticmethod
-    def build_test_case_path_list(agent_local_path: str):
-        """Builds a list of files, each representing a test case."""
-        test_cases_path = agent_local_path + '/testCases'
-
-        test_case_paths = []
-
-        for test_case in os.listdir(test_cases_path):
-            end = test_case.split('.')[-1]
-            if end == 'json':
-                test_case_path = f'{test_cases_path}/{test_case}'
-                test_case_paths.append(test_case_path)
-
-        return test_case_paths
-
-    @staticmethod
-    def build_lang_code_paths(intent: Intent):
-        """Builds dict of lang codes and file locations.
-
-        The language_codes and paths for each file are stored in a dictionary
-        inside of the Intent dataclass. This dict is access later to lint each
-        file and provide reporting based on each language code.
-        """
-        training_phrases_path = intent.dir_path + '/trainingPhrases'
-
-        for lang_file in os.listdir(training_phrases_path):
-            lang_code = lang_file.split('.')[0]
-            lang_code_path = f'{training_phrases_path}/{lang_file}'
-            intent.training_phrases[lang_code] = {'file_path': lang_code_path}
-
-    @staticmethod
-    def build_intent_path_list(agent_local_path: str):
-        """Builds a list of dirs, each representing an Intent directory.
-
-        Ex: /path/to/agent/intents/<intent_dir>
-
-        This dir path can be used to find the next level of information
-        in the directory by appending the appropriate next dir structures like:
-        - <intent_name>.json, for the Intent object metadata
-        - /trainingPhrases, for the Training Phrases dir
-        """
-        intents_path = agent_local_path + '/intents'
-
-        intent_paths = []
-
-        for intent_dir in os.listdir(intents_path):
-            intent_dir_path = f'{intents_path}/{intent_dir}'
-            intent_paths.append(intent_dir_path)
-
-        return intent_paths
-
-    @staticmethod
-    def build_flow_path_list(agent_local_path: str):
-        """Builds a list of dirs, each representing a Flow directory.
-
-        Ex: /path/to/agent/flows/<flow_dir>
-
-        This dir path can then be used to find the next level of information
-        in the directory by appending the appropriate next dir structures like:
-        - <flow_name>.json, for the Flow object
-        - /transitionRouteGroups, for the Route Groups dir
-        - /pages, for the Pages dir
-        """
-        flows_path = agent_local_path + '/flows'
-
-        flow_paths = []
-
-        for flow_dir in os.listdir(flows_path):
-            flow_dir_path = f'{flows_path}/{flow_dir}'
-            flow_paths.append(flow_dir_path)
-
-        return flow_paths
-
-    @staticmethod
-    def build_page_path_list(flow_path: str):
-        """Builds a list of files, each representing a Page.
-
-        Ex: /path/to/agent/flows/<flow_dir>/pages/<page_name>.json
-        """
-        pages_path = f'{flow_path}/pages'
-
-        page_paths = []
-
-        for page in os.listdir(pages_path):
-            page_file_path = f'{pages_path}/{page}'
-            page_paths.append(page_file_path)
-
-        return page_paths
-
-    @staticmethod
-    def parse_filepath(in_path: str, resource_type: str) -> str:
-        """Parse file path to provide quick reference for linter log."""
-
-        regex_map = {
-            'flow': r'.*\/flows\/([^\/]*)',
-            'page': r'.*\/pages\/([^\/]*)\.',
-            'intent': r'.*\/intents\/([^\/]*)'
-        }
-        resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
-
-        return resource_name
-
-    @staticmethod
-    def get_test_case_intent_phrase_pair(tc: TestCase):
-        """Parse Test Case and return a list of intents in use."""
-        intent_tp_pairs = []
-
-        if tc.conversation_turns:
-            for turn in tc.conversation_turns:
-                user = turn['userInput']
-                agent = turn['virtualAgentOutput']
-                intent = agent.get('triggeredIntent', None)
-                phrase = user.get('input', None)
-
-                text = phrase.get('text', None)
-                if text:
-                    text = text['text']
-
-                if intent and text:
-                    intent_tp_pairs.append(
-                        {'training_phrase': text,
-                        'intent': intent['name']}
-                        )
-
-        return intent_tp_pairs
-
-    @staticmethod
-    def get_test_case_intent_data(agent_local_path: str):
-        """Collect all Intent Files and Training Phrases for Test Case."""
-        # TODO (pmarlow) consolidate into build_intent_paths
-
-        intents_path = agent_local_path + '/intents'
-
-        intent_paths = []
-
-        for intent_dir in os.listdir(intents_path):
-            intent_dir_path = f'{intents_path}/{intent_dir}'
-            intent_paths.append(
-                {'intent': intent_dir,
-                'file_path': intent_dir_path})
-
-        return intent_paths
-
-    @staticmethod
-    def flatten_tp_data(tp_data: List[Any]):
-        """Flatten the Training Phrase proto to a list of strings."""
-        cleaned_tps = []
-
-        for tp in tp_data['trainingPhrases']:
-            parts_list = [part['text'].lower() for part in tp['parts']]
-            cleaned_tps.append("".join(parts_list))
-
-        return cleaned_tps 
-
-
-    def gather_intent_tps(self, tc: TestCase):
-        # TODO Refactor
-        """Collect all TPs associated with Intent data in Test Case."""
-        tc.associated_intent_data = {}
-
-        for pair in tc.intent_tp_pairs:
-            intent_dir = tc.agent_path + '/intents/' + pair['intent']
-
-            try:
-                if 'trainingPhrases' in os.listdir(intent_dir):
-
-                    training_phrases_path = intent_dir + '/trainingPhrases'
-
-                    for lang_file in os.listdir(training_phrases_path):
-                        lang_code = lang_file.split('.')[0]
-                        lang_code_path = f'{training_phrases_path}/{lang_file}'
-
-                        with open(lang_code_path, 'r', encoding='UTF-8') as tp_file:
-                            tp_data = json.load(tp_file)
-                            cleaned_tps = self.flatten_tp_data(tp_data)
-
-
-                        tc.associated_intent_data[pair['intent']] = cleaned_tps
-
-            except Exception as err:
-                tc.associated_intent_data = None
-                continue
-
-        return tc.associated_intent_data
-
-
-    def collect_transition_route_trigger(self, route):
-        """Inspect route and return all Intent/Condition info."""
-        # TODO: Clean up refactor elif logic
-
-        if 'intent' in route and 'condition' in route:
-            trigger = 'intent+condition'
-
-        elif 'intent' in route:
-            if self.verbose:
-                trigger = f'intent:{route["intent"]}'
+    def read_and_append_to_config(section: str, key: str, data: Any):
+        """Reads the existing config file and appends any new data."""
+        existing_data = config[section][key]
+
+        # Check for empty string from file and set to None
+        if existing_data != '':
+            data = existing_data + ',' + data
+
+        config.set(section, key, data)
+
+    def update_config(self, section: str, data: Any):
+        """Update the Config file based on user provided kwargs."""
+        if section == 'AGENT ID':
+            config.set(section, 'id', data)
+
+        if section == 'TEST CASE TAGS':
+            if isinstance(data, str):
+                self.read_and_append_to_config(section, 'include', data)
+            elif isinstance(data, List):
+                tag_string = ','.join(data)
+                self.read_and_append_to_config(section, 'include', tag_string)
             else:
-                trigger = 'intent'
+                raise ('Input must be one of the following formats: `str` | '\
+                    'List[`str`]')
 
-        elif 'condition' in route:
-            if self.verbose:
-                trigger = f'condition:{route["condition"]}'
-            else:
-                trigger = 'condition'
+            logging.info(config['TEST CASE TAGS']['include'])
 
-        return trigger
-
-    def get_trigger_info(self, resource, primary_key):
-        """Extract trigger info from route based on primary key."""
-
-        if primary_key == 'eventHandlers':
-            trigger = f'event:{resource["event"]}'
-
-        if primary_key == 'transitionRoutes':
-            intent_condition = self.collect_transition_route_trigger(resource)
-            trigger = f'route:{intent_condition}'
-
-        return trigger
-
-    def lint_agent_responses(self, route: Fulfillment, stats: LintStats) -> str:
-        """Executes all Text-based Fulfillment linter rules."""
-
-        route.verbose = self.verbose
-
-        # closed-choice-alternative
-        if self.disable_map.get('closed-choice-alternative', True):
-            stats = self.rules.closed_choice_alternative_parser(route, stats)
-
-        # wh-questions
-        if self.disable_map.get('wh-questions', True):
-            stats = self.rules.wh_questions(route, stats)
-
-        # clarifying-questions
-        if self.disable_map.get('clarifying-questions', True):
-            stats = self.rules.clarifying_questions(route, stats)
-
-        return stats
-
-    def lint_fulfillment_type(
-        self,
-        stats: LintStats,
-        route: Fulfillment,
-        path: object,
-        ftype: str):
-        """Parse through specific fulfillment types and lint."""
-        if ftype in path:
-            for item in path[ftype]:
-                if 'text' in item:
-                    for text in item['text']['text']:
-                        stats.total_inspected += 1
-                        route.text = text
-
-                        stats = self.lint_agent_responses(route, stats)
-
-        return stats
-
-
-    def lint_events(
-        self,
-        page: Page,
-        stats: LintStats):
-        """Parse through all Page Event Handlers and lint."""
-        tf_key = 'triggerFulfillment'
-
-        if not page.events:
-            return stats
-
-        for route_data in page.events:
-            route = Fulfillment(page=page)
-            route.trigger = self.get_trigger_info(route_data, 'eventHandlers')
-            path = route_data.get(tf_key, None)
-
-            if not path:
-                continue
-
-            stats = self.lint_fulfillment_type(stats, route, path, 'messages')
-
-        return stats
-
-    def lint_routes(
-        self,
-        page: Page,
-        stats: LintStats):
-        """Parse through all Transition Routes and lint."""
-        tf_key = 'triggerFulfillment'
-
-        if not page.routes:
-            return stats
-
-        for route_data in page.routes:
-            route = Fulfillment(page=page)
-            route.trigger = self.get_trigger_info(route_data, 'transitionRoutes')
-            path = route_data.get(tf_key, None)
-
-            if not path:
-                continue
-
-            stats = self.lint_fulfillment_type(stats, route, path, 'messages')
-
-        return stats
-
-    def lint_start_page(
-        self,
-        flow: Flow,
-        stats: LintStats):
-        """Process a single Flow Path file."""
-        with open(flow.start_page_file, 'r', encoding='UTF-8') as flow_file:
-            page = Page(flow=flow)
-            page.display_name = 'START_PAGE'
-
-            page.data = json.load(flow_file)
-            page.events = page.data.get('eventHandlers', None)
-            page.routes = page.data.get('transitionRoutes', None)
-
-            stats = self.lint_events(page, stats)
-            stats = self.lint_routes(page, stats)
-
-
-        return stats
-
-    def lint_flow(self, flow: Flow, stats: LintStats):
-        """Lint a Single Flow dir and all subdirectories."""
-        flow.display_name = self.parse_filepath(flow.dir_path, 'flow')
-
-        message = f'{"*" * 15} Flow: {flow.display_name}'
-        logging.info(message)
-
-        flow.start_page_file = f'{flow.dir_path}/{flow.display_name}.json'
-
-        stats = self.lint_start_page(flow, stats)
-        stats = self.lint_pages_directory(flow, stats)
-
-        return stats
-
-    def lint_page(self, page: Page, stats: LintStats):
-        """Lint a Single Page file."""
-        page.display_name = self.parse_filepath(page.page_file, 'page')
-
-        with open(page.page_file, 'r', encoding='UTF-8') as page_file:
-            page.data = json.load(page_file)
-            page.events = page.data.get('eventHandlers', None)
-            page.routes = page.data.get('transitionRoutes', None)
-
-            stats = self.lint_events(page, stats)
-            stats = self.lint_routes(page, stats)
-
-        return stats
-
-    def lint_intent_metadata(self, intent: Intent, stats: LintStats):
-        """Lint the metadata file for a single Intent."""
-        intent.metadata_file = f'{intent.dir_path}/{intent.display_name}.json'
-
-        with open(intent.metadata_file, 'r', encoding='UTF-8') as meta_file:
-            intent.data = json.load(meta_file)
-            intent.labels = intent.data.get('labels', None)
-            intent.description = intent.data.get('description', None)
-
-            # TODO: Linting rules for Intent Metadata
-
-        return stats
-
-    def lint_language_codes(self, intent: Intent, stats: LintStats):
-        """Executes all Training Phrase based linter rules."""
-
-        for lang_code in intent.training_phrases:
-            tp_file = intent.training_phrases[lang_code]['file_path']
-
-            with open(tp_file, 'r', encoding='UTF-8') as tps:
-                data = json.load(tps)
-                intent.training_phrases[lang_code]['tps'] = data['trainingPhrases']
-
-                # intent-min-tps
-                if self.disable_map.get('intent-min-tps', True):
-                    stats = self.rules.min_tps_head_intent(
-                        intent, lang_code, stats)
-
-
-        return stats
-
-    def lint_training_phrases(self, intent: Intent, stats: LintStats):
-        """Lint the Training Phrase dir for a single Intent."""
-        if 'trainingPhrases' in os.listdir(intent.dir_path):
-            self.build_lang_code_paths(intent)
-            stats = self.lint_language_codes(intent, stats)
-
-        # intent-missing-tps
-        elif self.disable_map.get('intent-missing-tps', True):
-            stats = self.rules.missing_training_phrases(intent, stats)
-
-        return stats
-
-
-    def lint_intent(self, intent: Intent, stats: LintStats):
-        """Lint a single Intent directory and associated files."""
-        intent.display_name = self.parse_filepath(intent.dir_path, 'intent')
-
-        stats = self.lint_intent_metadata(intent, stats)
-        stats = self.lint_training_phrases(intent, stats)
-
-        return stats
-
-    def qualify_test_case(self, tc: TestCase):
-        """Ensure Test Case meets all required filters and prerequisites."""
-        tag_filter = self.load_test_case_tag_inclusion()
-        tag_pattern = self.load_test_case_pattern()
-
-        if tc.tags:
-            tag_match = set(tc.tags).intersection(set(tag_filter))
-
-            if tag_match:
-                tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
-
-                if tc.intent_tp_pairs:
-                    tc.associated_intent_data = self.gather_intent_tps(tc)
-                    tc.qualified = True
-
-        return tc
-
-
-    def lint_test_case(self, tc: TestCase, stats: LintStats):
-        """Lint a single Test Case file."""
-
-        # TODO pmarlow: Implement Test Case config extraction
+        if section == 'TEST CASE DISPLAY NAME PATTERN':
+            config.set(section, 'pattern', data)
+            logging.info(config['TEST CASE DISPLAY NAME PATTERN']['pattern'])
         
-        with open(tc.dir_path, 'r', encoding='UTF-8') as tc_file:
-            tc.data = json.load(tc_file)
-            tc.display_name = tc.data.get('displayName', None)
-            tc.tags = tc.data.get('tags', None)
-            tc.conversation_turns = tc.data.get(
-                'testCaseConversationTurns', None)
-            tc.test_config = tc.data.get('testConfig', None)
-
-            tc = self.qualify_test_case(tc)
-
-        if tc.qualified and tc.associated_intent_data:
-            stats.total_test_cases += 1
-
-            # R007 explicit-tps-in-test-cases
-            stats = self.rules.explicit_tps_in_tcs(tc, stats)
-
-        elif tc.qualified and not tc.associated_intent_data:
-            stats.total_test_cases += 1
-
-            # R008 invalid-intent-in-test-cases
-            stats = self.rules.invalid_intent_in_tcs(tc, stats)
-
-
-        # # TODO pmarlow: Remove hard coded tag filter
-        # if (
-        #     tc.tags
-        #     and '#required' in tc.tags
-        #     and tc.match_pattern in tc.display_name):
-        #     stats.total_test_cases += 1
-
-        #     tc.intent_tp_pairs = self.get_test_case_intent_phrase_pair(tc)
-        #     if tc.intent_tp_pairs:
-
-        #         tc.associated_intent_data = self.gather_intent_tps(tc)
-
-                # if tc.associated_intent_data:
-                #     # R007 explicit-tps-in-test-cases
-                #     stats = self.rules.explicit_tps_in_tcs(tc, stats)
-
-                # else:
-                #     # R008 invalid-intent-in-test-cases
-                #     stats = self.rules.invalid_intent_in_tcs(tc, stats)
-
-        return stats
-
-    def lint_pages_directory(self, flow: Flow, stats: LintStats):
-        """Linting the Pages dir inside a specific Flow dir."""
-        # start_message = f'{"*" * 10} Begin Page Linter'
-        # logging.info(start_message)
-
-        # Some Flows may not contain Pages, so we check for the existence
-        # of the directory before traversing
-        if 'pages' in os.listdir(flow.dir_path):
-            page_paths = self.build_page_path_list(flow.dir_path)
-
-            for page_path in page_paths:
-                page = Page(flow=flow)
-                page.page_file = page_path
-                stats.total_pages += 1
-                stats = self.lint_page(page, stats)
-
-        return stats
-
-    def lint_flows_directory(self, agent_local_path: str):
-        """Linting the top level Flows dir in the JSON Package structure.
-
-        The following files/dirs exist under the `flows` dir:
-        - Flow object (i.e. Flow START_PAGE)
-        - transitionRouteGroups
-        - pages
-
-        In Dialogflow CX, the START_PAGE of each Flow is a special kind of Page
-        that exists within the Flow object itself. In this method, we will lint
-        the Flow object, all files in the transitionRouteGroups dir and all
-        files in the pages dir.
-        """
-        start_message = f'{"#" * 10} Begin Flow Directory Linter'
-        logging.info(start_message)
-
-        stats = LintStats()
-
-        # Create a list of all Flow paths to iter through
-        flow_paths = self.build_flow_path_list(agent_local_path)
-        stats.total_flows = len(flow_paths)
-
-        # linting happens here
-        for flow_path in flow_paths:
-            flow = Flow()
-            flow.dir_path = flow_path
-            stats = self.lint_flow(flow, stats)
-
-        header = "-" * 20
-        rating = self.calculate_rating(
-            stats.total_issues, stats.total_inspected)
-
-        end_message = f'\n{header}\n{stats.total_flows} Flows linted.'\
-            f'\n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} fulfillments inspected.'\
-            f'\nYour Agent Flows rated at {rating:.2f}/10\n\n'
-        logging.info(end_message)
-
-    def lint_intents_directory(self, agent_local_path: str):
-        """Linting the top level Intents Dir in the JSON Package structure.
-
-        The following files/dirs exist under the `intents` dir:
-        - <intent_display_name> Directory
-          - trainingPhrases
-            - <language-code>.json
-          - <intent_display_name> Object
-
-        In Dialogflow CX, the Training Phrases of each Intent are stored in
-        individual .json files by language code under each Intent Display
-        Name. In this method, we will lint all Intent dirs, including the
-        training phrase files and metadata objects for each Intent.
-        """
-        start_message = f'{"#" * 10} Begin Intents Directory Linter'
-        logging.info(start_message)
-
-        stats = LintStats()
-
-        # Create a list of all Intent paths to iter through
-        intent_paths = self.build_intent_path_list(agent_local_path)
-        stats.total_intents = len(intent_paths)
-
-        # Linting Starts Here
-        for intent_path in intent_paths:
-            intent = Intent()
-            intent.verbose = self.verbose
-            intent.dir_path = intent_path
-            stats = self.lint_intent(intent, stats)
-            # stats.total_inspected += 1
-
-        header = "-" * 20
-        rating = self.calculate_rating(
-            stats.total_issues, stats.total_inspected)
-
-        end_message = f'\n{header}\n{stats.total_intents} Intents linted.'\
-            f'\n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} inspected.'\
-            f'\nYour Agent Intents rated at {rating:.2f}/10\n\n'
-        logging.info(end_message)
-    
-    def lint_test_cases_directory(
-        self,
-        agent_local_path: str,
-        test_case_pattern: str):
-        """Linting the test cases dir in the JSON package structure."""
-        start_message = f'{"#" * 10} Begin Test Cases Directory Linter'
-        logging.info(start_message)
-
-        stats = LintStats()
-
-        test_case_paths = self.build_test_case_path_list(agent_local_path)
-        # stats.total_test_cases = len(test_case_paths)
-
-        # self.intent_map_for_tcs = self.get_test_case_intent_data(agent_local_path)
-
-        # Linting Starts Here
-        for test_case in test_case_paths:
-            tc = TestCase()
-            tc.match_pattern = test_case_pattern
-            tc.verbose = self.verbose
-            tc.dir_path = test_case
-            tc.agent_path = agent_local_path
-            stats = self.lint_test_case(tc, stats)
-
-        header = "-" * 20
-        rating = self.calculate_rating(
-            stats.total_issues, stats.total_inspected)
-
-        end_message = f'\n{header}\n{stats.total_test_cases} Test Cases linted.'\
-            f'\n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} inspected.'\
-            f'\nYour Agent Test Cases rated at {rating:.2f}/10\n\n'
-        logging.info(end_message)
 
     def lint_agent(
         self,
-        agent_local_path: str,
-        test_case_pattern: str = None):
+        agent_local_path: str):
         """Linting the entire CX Agent and all resource directories."""
         # agent_file = agent_local_path + '/agent.json'
         # with open(agent_file, 'r', encoding='UTF-8') as agent_data:
@@ -772,7 +97,6 @@ class CxLint:
         start_message = f'{"=" * 5} LINTING AGENT {"=" * 5}\n'
         logging.info(start_message)
 
-
-        self.lint_flows_directory(agent_local_path)
-        self.lint_intents_directory(agent_local_path)
-        self.lint_test_cases_directory(agent_local_path, test_case_pattern)
+        self.flows.lint_flows_directory(agent_local_path)
+        self.intents.lint_intents_directory(agent_local_path)
+        self.test_cases.lint_test_cases_directory(agent_local_path)
