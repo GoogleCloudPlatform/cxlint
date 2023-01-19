@@ -8,6 +8,8 @@
 #
 # This version has been modified to expect 4 space indents instead of 2.
 
+[AGENT ID]
+id=
 
 [MESSAGES CONTROL]
 # Disable the message, report, category or checker with the given id(s).
@@ -30,9 +32,6 @@ disable=
 
 [TEST CASE TAGS]
 include=
-    required,
-    cloud_functions
-
 
 # For Test Cases 
 [TEST CASE INTENTS]
@@ -40,4 +39,4 @@ include=
 
 
 [TEST CASE DISPLAY NAME PATTERN]
-pattern='NUS.SB'
+pattern=
