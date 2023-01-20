@@ -18,28 +18,36 @@ logging.basicConfig(
 @dataclass
 class Flow:
     """"Used to track current Flow Attributes."""
-    display_name: str = None # Flow Display Name
-    start_page_file: str = None # File Path Location of START_PAGE
-    dir_path: str = None # Full Directory Path for this Flow
+    agent_id: str = None
     data: Dict[str, Any] = None
+    dir_path: str = None # Full Directory Path for this Flow
+    display_name: str = None # Flow Display Name
+    resource_id: str = None
+    resource_type: str = 'flow'
+    start_page_file: str = None # File Path Location of START_PAGE
 
 @dataclass
 class Page:
     """Used to track current Page Attributes."""
-    flow: Flow = None
-    display_name: str = None
-    page_file: str = None
+    agent_id: str = None
     data: Dict[str, Any] = None
+    display_name: str = None
     events: List[object] = None
+    flow: Flow = None
+    page_file: str = None
+    resource_id: str = None
+    resource_type: str = 'page'
     routes: List[object] = None
 
 @dataclass
 class Fulfillment:
     """Used to track current Fulfillment Attributes."""
+    agent_id: str = None
     page: Page = None
-    trigger: str = None
     text: str = None
-    resource: str = None
+    trigger: str = None
+    # resource: str = None
+    resource_type: str = 'fulfillment'
     verbose: bool = False
 
 class Flows:
@@ -51,11 +59,8 @@ class Flows:
         self.verbose = verbose
         self.config = config
         self.disable_map = Common.load_message_controls(config)
+        self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions()
-
-        # self.disable_map = self.load_message_controls()
-        # self.test_case_tag_filter = self.load_test_case_tag_filter()
-        # self.intent_map_for_tcs = None
 
     @staticmethod
     def build_flow_path_list(agent_local_path: str):
@@ -178,6 +183,7 @@ class Flows:
 
         for route_data in page.events:
             route = Fulfillment(page=page)
+            route.agent_id = page.agent_id
             route.trigger = self.get_trigger_info(route_data, 'eventHandlers')
             path = route_data.get(tf_key, None)
 
@@ -200,6 +206,8 @@ class Flows:
 
         for route_data in page.routes:
             route = Fulfillment(page=page)
+            route.agent_id = page.agent_id
+            route.resource_type = 'fulfillment'
             route.trigger = self.get_trigger_info(route_data, 'transitionRoutes')
             path = route_data.get(tf_key, None)
 
@@ -218,6 +226,8 @@ class Flows:
             page.data = json.load(page_file)
             page.events = page.data.get('eventHandlers', None)
             page.routes = page.data.get('transitionRoutes', None)
+
+            page.resource_id = page.data.get('name', None)
 
             stats = self.lint_events(page, stats)
             stats = self.lint_routes(page, stats)
@@ -238,6 +248,10 @@ class Flows:
             page.data = json.load(flow_file)
             page.events = page.data.get('eventHandlers', None)
             page.routes = page.data.get('transitionRoutes', None)
+
+            flow.resource_id = page.data.get('name', None)
+            page.agent_id = flow.agent_id
+            page.resource_id = 'START_PAGE'
 
             stats = self.lint_events(page, stats)
             stats = self.lint_routes(page, stats)
@@ -287,6 +301,7 @@ class Flows:
         # linting happens here
         for flow_path in flow_paths:
             flow = Flow()
+            flow.agent_id = self.agent_id
             flow.dir_path = flow_path
             stats = self.lint_flow(flow, stats)
 
@@ -312,6 +327,7 @@ class Flows:
 
             for page_path in page_paths:
                 page = Page(flow=flow)
+                page.agent_id = flow.agent_id
                 page.page_file = page_path
                 stats.total_pages += 1
                 stats = self.lint_page(page, stats)
