@@ -4,6 +4,7 @@ import logging
 import re
 import os
 
+
 # logging config
 logging.basicConfig(
     level=logging.INFO,
@@ -18,20 +19,39 @@ class RulesDefinitions:
         base = 'https://dialogflow.cloud.google.com/cx/'
         link = None
 
-        link_map = {
-            'test_case': f'/testCases/{resource.resource_id}',
-            'intent': f'/intents?id={resource.resource_id}'
-        }
+        if resource.resource_type == 'fulfillment':
+            link_map = {
+                'fulfillment': f'/flows/{resource.page.flow.resource_id}/flow_creation?'\
+                    f'pageId={resource.page.resource_id}'
+                    }
+
+        else:
+            link_map = {
+                'test_case': f'/testCases/{resource.resource_id}',
+                'intent': f'/intents?id={resource.resource_id}'
+                }
 
         if resource.agent_id != '':
             link = base + resource.agent_id + link_map[resource.resource_type]
 
         return link
 
-    @staticmethod
-    def page_logger_output(resource, message: str) -> None:
+    def page_logger_output(self, resource, message: str) -> None:
         """Consolidated logging method for Page rules."""
-        if resource.verbose:
+        link = self.create_link(resource)
+
+        # https://dialogflow.cloud.google.com/cx/{agent_id}/flows/468aa549-ae58-46a5-b9ca-a8ef30b4771f/flow_creation?pageId=c4b66bc4-71dc-4732-a8e6-23ddfdf2dd18
+        if resource.verbose and link:
+            logging.info(
+                '%s:%s:%s: \n%s: \n%s\n%s\n',
+                resource.page.flow.display_name,
+                resource.page.display_name,
+                resource.trigger,
+                message,
+                resource.text,
+                link)
+
+        elif resource.verbose:
             logging.info(
                 '%s:%s:%s: \n%s: \n%s\n',
                 resource.page.flow.display_name,
@@ -39,6 +59,7 @@ class RulesDefinitions:
                 resource.trigger,
                 message,
                 resource.text)
+
         else:
             logging.info(
                 '%s:%s:%s: %s',
@@ -128,7 +149,7 @@ class RulesDefinitions:
         # pattern = r'(\sare\s|\sdo\s|should\s|\swill\s|what).*\sor\s.*'
 
         # updated pattern
-        pattern = r'^(What|Where|When|Who|Why|How) (.*) or (.*)\?$'
+        pattern = r'^(What|Where|When|Who|Why|How|Would) (.*) or (.*)\?$'
 
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
