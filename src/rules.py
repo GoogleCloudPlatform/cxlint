@@ -130,12 +130,6 @@ class RulesDefinitions:
 
         if 'head' in intent.display_name:
             hid = True
-        # elif intent.labels:
-        #     for label in intent.labels:
-        #         if 'head' in label['key']:
-        #             hid = True
-        #         if 'head' in label['value']:
-        #             hid = True
 
         return hid
 
@@ -164,8 +158,6 @@ class RulesDefinitions:
         """Identifies a Wh- Question and checks for appropriate punctuation."""
         message = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
 
-        # pattern = r'(How|Which|What|Where|When|Why).*(\?)'
-
         # updated pattern
         pattern = r'^(what|when|where|who|why|how)\b.*\?$'
 
@@ -181,8 +173,6 @@ class RulesDefinitions:
     def clarifying_questions(self, route, stats) -> object:
         """Identifies Clarifying Questions that are missing `?` Punctuation."""
         message = 'R003: Clarifying Question Should Use `?` Punctuation'
-
-        # pattern = r'^(How|Which|What|Where|When|Why).*(\.)$'
 
         # updated pattern
         pattern = r'^(what|when|where|who|why|how)\b.*\.$'

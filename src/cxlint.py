@@ -33,6 +33,7 @@ class CxLint:
         verbose: bool = False,
         load_gcs: bool = False,
         agent_id: str = None,
+        report: bool = False,
         test_case_pattern: str = None,
         test_case_tags: Union[List[str], str] = None):
 
