@@ -102,24 +102,25 @@ class Flows:
 
     def collect_transition_route_trigger(self, route):
         """Inspect route and return all Intent/Condition info."""
-        # TODO: Clean up refactor elif logic
 
-        if 'intent' in route and 'condition' in route:
-            trigger = 'intent+condition'
+        trigger = []
+        intent_name = None
 
-        elif 'intent' in route:
-            if self.verbose:
-                trigger = f'intent:{route["intent"]}'
-            else:
-                trigger = 'intent'
+        if 'intent' in route:
+            trigger.append('intent')
+            intent_name = route.get("intent", None)
 
-        elif 'condition' in route:
-            if self.verbose:
-                trigger = f'condition:{route["condition"]}'
-            else:
-                trigger = 'condition'
+        if 'condition' in route:
+            trigger.append('condition')
+    
+        if len(trigger) > 0:
+            trigger = '+'.join(trigger)
+        
+        if self.verbose and intent_name:
+            return f'{trigger}:{intent_name}'
 
-        return trigger
+        else:
+            return trigger
 
     def get_trigger_info(self, resource, primary_key):
         """Extract trigger info from route based on primary key."""
