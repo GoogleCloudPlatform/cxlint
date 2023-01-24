@@ -87,15 +87,20 @@ class Intents:
         """Lint the metadata file for a single Intent."""
         intent.metadata_file = f'{intent.dir_path}/{intent.display_name}.json'
 
-        with open(intent.metadata_file, 'r', encoding='UTF-8') as meta_file:
-            intent.data = json.load(meta_file)
-            intent.resource_id = intent.data.get('name', None)
-            intent.labels = intent.data.get('labels', None)
-            intent.description = intent.data.get('description', None)
+        try:
+            with open(intent.metadata_file, 'r', encoding='UTF-8') as meta_file:
+                intent.data = json.load(meta_file)
+                intent.resource_id = intent.data.get('name', None)
+                intent.labels = intent.data.get('labels', None)
+                intent.description = intent.data.get('description', None)
 
-            # TODO: Linting rules for Intent Metadata
+                # TODO: Linting rules for Intent Metadata
 
-            meta_file.close()
+                meta_file.close()
+
+        except FileNotFoundError as err:
+            logging.info('ERROR: Missing Metadata file for Intent: %s\n', \
+                intent.display_name)
 
         return stats
 
