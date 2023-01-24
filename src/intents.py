@@ -37,6 +37,14 @@ class Intents:
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions()
+        self.display_name_filter = self.load_display_name_filter(config)
+
+    @staticmethod
+    def load_display_name_filter(config: ConfigParser) -> str:
+        """Loads the matching pattern for Intent display names."""
+        pattern = config['INTENTS']['pattern']
+
+        return pattern
 
     @staticmethod
     def parse_lang_code(lang_code_path: str) -> str:
@@ -140,8 +148,11 @@ class Intents:
         """Lint a single Intent directory and associated files."""
         intent.display_name = Common.parse_filepath(intent.dir_path, 'intent')
 
-        stats = self.lint_intent_metadata(intent, stats)
-        stats = self.lint_training_phrases(intent, stats)
+        # Filter Intents to lint by display name
+        if self.display_name_filter in intent.display_name:
+            stats.total_intents += 1
+            stats = self.lint_intent_metadata(intent, stats)
+            stats = self.lint_training_phrases(intent, stats)
 
         return stats
 
@@ -166,7 +177,7 @@ class Intents:
 
         # Create a list of all Intent paths to iter through
         intent_paths = self.build_intent_path_list(agent_local_path)
-        stats.total_intents = len(intent_paths)
+        # stats.total_intents = len(intent_paths)
 
         # Linting Starts Here
         for intent_path in intent_paths:

@@ -30,12 +30,13 @@ class CxLint:
     """Core CX Linter methods and functions."""
     def __init__(
         self,
-        verbose: bool = False,
-        load_gcs: bool = False,
         agent_id: str = None,
+        intent_pattern: str = None,
+        load_gcs: bool = False,
         report: bool = False,
         test_case_pattern: str = None,
-        test_case_tags: Union[List[str], str] = None):
+        test_case_tags: Union[List[str], str] = None,
+        verbose: bool = False):
 
         if load_gcs:
             self.gcs = GcsUtils()
@@ -49,6 +50,9 @@ class CxLint:
 
         if agent_id:
             self.update_config('AGENT ID', agent_id)
+
+        if intent_pattern:
+            self.update_config('INTENTS', intent_pattern)
 
         self.intents = Intents(verbose, config)
         self.flows = Flows(verbose, config)
@@ -69,6 +73,9 @@ class CxLint:
         """Update the Config file based on user provided kwargs."""
         if section == 'AGENT ID':
             config.set(section, 'id', data)
+
+        if section == 'INTENTS':
+            config.set(section, 'pattern', data)
 
         if section == 'TEST CASE TAGS':
             if isinstance(data, str):
