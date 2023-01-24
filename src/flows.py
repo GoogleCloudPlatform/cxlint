@@ -43,6 +43,7 @@ class Page:
 class Fulfillment:
     """Used to track current Fulfillment Attributes."""
     agent_id: str = None
+    has_webhook: bool = False
     page: Page = None
     text: str = None
     trigger: str = None
@@ -160,8 +161,14 @@ class Flows:
         path: object,
         ftype: str):
         """Parse through specific fulfillment types and lint."""
-        if ftype in path:
-            for item in path[ftype]:
+        tf_data = path.get(ftype, None)
+
+        if tf_data:
+            for item in tf_data:
+                # This is where each message type will exist
+                # text, custom payload, etc.
+
+                # TODO pmarlow: create sub-method parsers per type
                 if 'text' in item:
                     for text in item['text']['text']:
                         stats.total_inspected += 1
@@ -216,6 +223,9 @@ class Flows:
                 continue
 
             stats = self.lint_fulfillment_type(stats, route, path, 'messages')
+
+            # Preset Params can be linted here
+            # stats = self.lint_fulfillment_type(stats, route, path, 'setParameterActions')
 
         return stats
 
