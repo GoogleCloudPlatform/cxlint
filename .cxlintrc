@@ -8,14 +8,22 @@
 #
 # This version has been modified to expect 4 space indents instead of 2.
 
+# Providing the Agent ID for the Dialogflow CX agent that is being linted will
+# enabled deep linked results from the logger.
 [AGENT ID]
 id=
 
-[MESSAGES CONTROL]
-# Disable the message, report, category or checker with the given id(s).
+# Linting of intents can be filtered by providing a string pattern to match
+# against the Intent Display Names.
+[INTENTS]
+pattern=
 
-# Comma separated list of symbolic names for linter rules to disable
-# Uncomment lines to disable linting rules.
+# Disable the message, report, category or checker with the given id(s).
+# The disable key expects a comma separated list of symbolic names for
+# linter rules to disable them.
+
+# For simplicity, uncomment any line to disable that linting rule.
+[MESSAGES CONTROL]
 disable=
 #    closed-choice-alternative,
 #    wh-questions,
@@ -29,7 +37,6 @@ disable=
 # For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.
 # The `#` symbol is used as a comment delimiter in config files, so the line 
 # _will not_ be read if you leave the preceeding `# in place.
-
 [TEST CASE TAGS]
 include=
 
