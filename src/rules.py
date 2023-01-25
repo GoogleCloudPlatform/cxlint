@@ -9,7 +9,7 @@ import os
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
-)
+    )
 
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
@@ -50,6 +50,7 @@ class RulesDefinitions:
                 message,
                 resource.text,
                 link)
+
 
         elif resource.verbose:
             logging.info(

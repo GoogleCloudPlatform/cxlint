@@ -87,8 +87,6 @@ class CxLint:
                 raise ('Input must be one of the following formats: `str` | '\
                     'List[`str`]')
 
-            logging.info(config['TEST CASE TAGS']['include'])
-
         if section == 'TEST CASE DISPLAY NAME PATTERN':
             config.set(section, 'pattern', data)        
 
