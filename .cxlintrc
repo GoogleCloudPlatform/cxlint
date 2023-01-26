@@ -13,6 +13,21 @@
 [AGENT ID]
 id=
 
+# Agent linting can be limited to specific resources by adding them to the include
+# list below. Once an item is add to the include list, all other resource types are
+# implicitly excluded. If no resources are added to the include list, then all
+# resources types are included by default.
+[AGENT RESOURCES]
+include=
+#    entityTypes,
+#    flows,
+#    intents,
+#    testCasees,
+#    webhooks
+
+[FLOWS]
+include=
+
 # Linting of intents can be filtered by providing a string pattern to match
 # against the Intent Display Names.
 [INTENTS]
