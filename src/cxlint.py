@@ -7,11 +7,13 @@ import logging
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Tuple, Union
 
-from rules import RulesDefinitions # pylint: disable=E0401
-from flows import Flows
-from intents import Intents
-from test_cases import TestCases
+from common import Common
 from gcs_utils import GcsUtils
+from rules import RulesDefinitions # pylint: disable=E0401
+from resources.flows import Flows
+from resources.entity_types import EntityTypes
+from resources.intents import Intents
+from resources.test_cases import TestCases
 
 # logging config
 logging.basicConfig(
@@ -24,7 +26,6 @@ config = configparser.ConfigParser()
 config.sections()
 
 config.read_file(open(os.path.join(os.path.dirname(__file__), '..', '.cxlintrc')))
-# config.read('../.cxlintrc')
 
 class CxLint:
     """Core CX Linter methods and functions."""
@@ -34,6 +35,7 @@ class CxLint:
         intent_pattern: str = None,
         load_gcs: bool = False,
         report: bool = False,
+        resource_types: Union[List[str], str] = None,
         test_case_pattern: str = None,
         test_case_tags: Union[List[str], str] = None,
         verbose: bool = False):
@@ -54,6 +56,12 @@ class CxLint:
         if intent_pattern:
             self.update_config('INTENTS', intent_pattern)
 
+        if resource_types:
+            self.update_config('AGENT RESOURCES', resource_types)
+
+        self.resource_filter = Common.load_resource_filter(config)
+
+        self.entity_types = EntityTypes(verbose, config)
         self.intents = Intents(verbose, config)
         self.flows = Flows(verbose, config)
         self.test_cases = TestCases(verbose, config)
@@ -69,23 +77,44 @@ class CxLint:
 
         config.set(section, key, data)
 
+    @staticmethod
+    def transform_list_to_str(data: Union[List[str], str]):
+        """Determine input data and parse accordingly for config update."""
+        res = data
+
+        if isinstance(data, List):
+            res = ','.join(data)
+
+        if not isinstance(res, str):
+            raise ('Input must be one of the following formats: `str` | '\
+                    'List[`str`]')
+
+        return res
+
     def update_config(self, section: str, data: Any):
         """Update the Config file based on user provided kwargs."""
         if section == 'AGENT ID':
             config.set(section, 'id', data)
 
+        if section == 'AGENT RESOURCES':
+            data = self.transform_list_to_str(data)
+            config.set(section, 'include', data)
+
         if section == 'INTENTS':
             config.set(section, 'pattern', data)
 
         if section == 'TEST CASE TAGS':
-            if isinstance(data, str):
-                self.read_and_append_to_config(section, 'include', data)
-            elif isinstance(data, List):
-                tag_string = ','.join(data)
-                self.read_and_append_to_config(section, 'include', tag_string)
-            else:
-                raise ('Input must be one of the following formats: `str` | '\
-                    'List[`str`]')
+            data = self.transform_list_to_str(data)
+            self.read_and_append_to_config(section, 'include', data)
+
+            # if isinstance(data, str):
+            #     self.read_and_append_to_config(section, 'include', data)
+            # elif isinstance(data, List):
+            #     tag_string = ','.join(data)
+            #     self.read_and_append_to_config(section, 'include', tag_string)
+            # else:
+            #     raise ('Input must be one of the following formats: `str` | '\
+            #         'List[`str`]')
 
         if section == 'TEST CASE DISPLAY NAME PATTERN':
             config.set(section, 'pattern', data)        
@@ -101,6 +130,14 @@ class CxLint:
         start_message = f'{"=" * 5} LINTING AGENT {"=" * 5}\n'
         logging.info(start_message)
 
-        self.flows.lint_flows_directory(agent_local_path)
-        self.intents.lint_intents_directory(agent_local_path)
-        self.test_cases.lint_test_cases_directory(agent_local_path)
+        if self.resource_filter.get('flows', False):
+            self.flows.lint_flows_directory(agent_local_path)
+
+        if self.resource_filter.get('entity_types', False):
+            self.entity_types.lint_entity_types_directory(agent_local_path)
+
+        if self.resource_filter.get('intents', False):
+            self.intents.lint_intents_directory(agent_local_path)
+
+        if self.resource_filter.get('test_cases', False):
+            self.test_cases.lint_test_cases_directory(agent_local_path)
