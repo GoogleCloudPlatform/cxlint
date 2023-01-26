@@ -72,14 +72,14 @@ class TestCases:
     @staticmethod
     def build_test_case_path_list(agent_local_path: str):
         """Builds a list of files, each representing a test case."""
-        test_cases_path = agent_local_path + '/testCases'
+        root_dir = agent_local_path + '/testCases'
 
         test_case_paths = []
 
-        for test_case in os.listdir(test_cases_path):
+        for test_case in os.listdir(root_dir):
             end = test_case.split('.')[-1]
             if end == 'json':
-                test_case_path = f'{test_cases_path}/{test_case}'
+                test_case_path = f'{root_dir}/{test_case}'
                 test_case_paths.append(test_case_path)
 
         return test_case_paths

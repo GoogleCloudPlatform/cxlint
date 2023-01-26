@@ -62,6 +62,7 @@ class Flows:
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions()
+        self.route_parameters = {}
 
     @staticmethod
     def build_flow_path_list(agent_local_path: str):
@@ -75,12 +76,12 @@ class Flows:
         - /transitionRouteGroups, for the Route Groups dir
         - /pages, for the Pages dir
         """
-        flows_path = agent_local_path + '/flows'
+        root_dir = agent_local_path + '/flows'
 
         flow_paths = []
 
-        for flow_dir in os.listdir(flows_path):
-            flow_dir_path = f'{flows_path}/{flow_dir}'
+        for flow_dir in os.listdir(root_dir):
+            flow_dir_path = f'{root_dir}/{flow_dir}'
             flow_paths.append(flow_dir_path)
 
         return flow_paths
@@ -100,6 +101,30 @@ class Flows:
             page_paths.append(page_file_path)
 
         return page_paths
+
+    def update_route_parameters(self, route: Fulfillment, item: Dict[str,str]):
+        """Update the Route Parameters map based on new info."""
+        flow_name = route.page.flow.display_name
+        page_name = route.page.display_name
+
+        flow_data = self.route_parameters.get(flow_name, None)
+        page_data = None
+
+        if flow_data:
+            page_data = flow_data.get(page_name, None)
+
+        # Flow and Page already exists, append to existing list.
+        if page_data:
+            self.route_parameters[flow_name][page_name].append(item)
+
+        # Flow data exists, but not Page, so only create the Page list.
+        elif flow_data and not page_data:
+            self.route_parameters[flow_name][page_name] = [item]
+
+        # Neither the Flow or Page data exists, so create it all.
+        else:
+            self.route_parameters[flow_name] = {page_name: [item]}
+
 
     def collect_transition_route_trigger(self, route):
         """Inspect route and return all Intent/Condition info."""
@@ -159,12 +184,12 @@ class Flows:
         stats: LintStats,
         route: Fulfillment,
         path: object,
-        ftype: str):
+        key: str):
         """Parse through specific fulfillment types and lint."""
-        tf_data = path.get(ftype, None)
+        fulfillment_data = path.get(key, None)
 
-        if tf_data:
-            for item in tf_data:
+        if fulfillment_data:
+            for item in fulfillment_data:
                 # This is where each message type will exist
                 # text, custom payload, etc.
 
@@ -175,6 +200,11 @@ class Flows:
                         route.text = text
 
                         stats = self.lint_agent_responses(route, stats)
+
+                if 'parameter' in item:
+                    self.update_route_parameters(route, item)
+                    # self.route_parameters[route.page.flow.display_name] = {route.page.display_name: [item]}
+
 
         return stats
 
@@ -225,7 +255,7 @@ class Flows:
             stats = self.lint_fulfillment_type(stats, route, path, 'messages')
 
             # Preset Params can be linted here
-            # stats = self.lint_fulfillment_type(stats, route, path, 'setParameterActions')
+            stats = self.lint_fulfillment_type(stats, route, path, 'setParameterActions')
 
         return stats
 

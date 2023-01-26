@@ -63,11 +63,11 @@ class Intents:
         inside of the Intent dataclass. This dict is access later to lint each
         file and provide reporting based on each language code.
         """
-        training_phrases_path = intent.dir_path + '/trainingPhrases'
+        root_dir = intent.dir_path + '/trainingPhrases'
 
-        for lang_file in os.listdir(training_phrases_path):
+        for lang_file in os.listdir(root_dir):
             lang_code = lang_file.split('.')[0]
-            lang_code_path = f'{training_phrases_path}/{lang_file}'
+            lang_code_path = f'{root_dir}/{lang_file}'
             intent.training_phrases[lang_code] = {'file_path': lang_code_path}
 
     @staticmethod
@@ -81,12 +81,12 @@ class Intents:
         - <intent_name>.json, for the Intent object metadata
         - /trainingPhrases, for the Training Phrases dir
         """
-        intents_path = agent_local_path + '/intents'
+        root_dir = agent_local_path + '/intents'
 
         intent_paths = []
 
-        for intent_dir in os.listdir(intents_path):
-            intent_dir_path = f'{intents_path}/{intent_dir}'
+        for intent_dir in os.listdir(root_dir):
+            intent_dir_path = f'{root_dir}/{intent_dir}'
             intent_paths.append(intent_dir_path)
 
         return intent_paths
