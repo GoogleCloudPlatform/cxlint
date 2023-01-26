@@ -42,7 +42,21 @@ class Common:
         resource_filter = config['AGENT RESOURCES']['include'].replace(
             '\n', '').split(',')
 
-        resource_dict = {resource:True for resource in resource_filter}
+        resource_dict = {
+            'entity_types': True,
+            'flows': True,
+            'intents': True,
+            'test_cases': True,
+            'webhooks': True
+            }
+
+        if len(resource_filter) == 1 and resource_filter[0] == '':
+            resource_filter = None
+
+        if resource_filter:
+            for resource in resource_dict:
+                if resource not in resource_filter:
+                    resource_dict[resource] = False
 
         return resource_dict
 

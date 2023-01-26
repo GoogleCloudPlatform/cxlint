@@ -35,7 +35,7 @@ class CxLint:
         intent_pattern: str = None,
         load_gcs: bool = False,
         report: bool = False,
-        resource_types: Union[List[str], str] = None,
+        resource_filter: Union[List[str], str] = None,
         test_case_pattern: str = None,
         test_case_tags: Union[List[str], str] = None,
         verbose: bool = False):
@@ -56,8 +56,8 @@ class CxLint:
         if intent_pattern:
             self.update_config('INTENTS', intent_pattern)
 
-        if resource_types:
-            self.update_config('AGENT RESOURCES', resource_types)
+        if resource_filter:
+            self.update_config('AGENT RESOURCES', resource_filter)
 
         self.resource_filter = Common.load_resource_filter(config)
 

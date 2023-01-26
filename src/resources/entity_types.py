@@ -155,8 +155,8 @@ class EntityTypes:
         rating = Common.calculate_rating(
             stats.total_issues, stats.total_inspected)
 
-        end_message = f'\n{header}\n{stats.total_flows} Entity Types linted.'\
-            f'\n{stats.total_issues} issues found out of '\
+        end_message = f'\n{header}\n{stats.total_entity_types} Entity Types '\
+            f'linted. \n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} inspected.'\
             f'\nYour Agent Entity Types rated at {rating:.2f}/10\n\n'
         logging.info(end_message)
