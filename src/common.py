@@ -20,7 +20,7 @@ class LintStats:
     total_pages: int = 0
     total_intents: int = 0
     total_training_phrases: int = 0
-    total_entities: int = 0
+    total_entity_types: int = 0
     total_route_groups: int = 0
     total_test_cases: int = 0
     total_webhooks: int = 0
@@ -35,6 +35,17 @@ class Common:
         msg_dict = {msg:False for msg in msg_list}
 
         return msg_dict
+
+    @staticmethod
+    def load_resource_filter(config: ConfigParser) -> List[str]:
+        """Loads the config file for agent resource filtering."""
+        resource_filter = config['AGENT RESOURCES']['include'].replace(
+            '\n', '').split(',')
+
+        resource_dict = {resource:True for resource in resource_filter}
+
+        return resource_dict
+
 
     @staticmethod
     def load_agent_id(config: ConfigParser) -> str:
@@ -61,6 +72,7 @@ class Common:
         regex_map = {
             'flow': r'.*\/flows\/([^\/]*)',
             'page': r'.*\/pages\/([^\/]*)\.',
+            'entity_type': r'.*\/entityTypes\/([^\/]*)',
             'intent': r'.*\/intents\/([^\/]*)'
         }
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]

@@ -16,23 +16,25 @@ class RulesDefinitions:
 
     @staticmethod
     def create_link(resource):
-        base = 'https://dialogflow.cloud.google.com/cx/'
-        link = None
+        if resource.agent_id and resource.agent_id != '':
+            base = 'https://dialogflow.cloud.google.com/cx/'
+            link = None
 
-        if resource.resource_type == 'fulfillment':
-            link_map = {
-                'fulfillment': f'/flows/{resource.page.flow.resource_id}/flow_creation?'\
-                    f'pageId={resource.page.resource_id}'
+            if resource.resource_type == 'fulfillment':
+                link_map = {
+                    'fulfillment': f'/flows/{resource.page.flow.resource_id}'\
+                        f'/flow_creation?pageId={resource.page.resource_id}'
+                        }
+
+            else:
+                link_map = {
+                    'test_case': f'/testCases/{resource.resource_id}',
+                    'intent': f'/intents?id={resource.resource_id}',
+                    'entity_type': f'/entityTypes?id={resource.resource_id}'
                     }
 
-        else:
-            link_map = {
-                'test_case': f'/testCases/{resource.resource_id}',
-                'intent': f'/intents?id={resource.resource_id}'
-                }
-
-        if resource.agent_id != '':
-            link = base + resource.agent_id + link_map[resource.resource_type]
+            path = link_map.get(resource.resource_type, None)
+            link = base + resource.agent_id + path
 
         return link
 
@@ -96,10 +98,7 @@ class RulesDefinitions:
     def test_case_logger_output(
         self, tc, phrase: str, intent: str, message: str) -> None:
         """Consolidated logging method for Test Case rules."""
-        link = None
-        
-        if tc.agent_id:
-            link = self.create_link(tc)
+        link = self.create_link(tc)
 
         if tc.verbose and link:
             logging.info(
@@ -123,6 +122,10 @@ class RulesDefinitions:
                 '%s:%s',
                 tc.display_name,
                 message)
+
+    def entity_type_logger(self, etype, message) -> None:
+        """Consolidated logging method for Entity Type rules."""
+        link = self.create_link(etype)
 
     @staticmethod
     def check_if_head_intent(intent):
@@ -258,5 +261,30 @@ class RulesDefinitions:
 
         message = 'R008: Invalid Intent in Test Case'
         self.test_case_logger_output(tc, phrase, intent, message)
+
+        return stats
+
+    # ENTITY TYPE RULES
+    # yes-no-entities
+    def yes_no_entities(self, etype, lang_code, stats) -> object:
+        """Check that yes/no entities are not present in the agent."""
+        yes_no = ['yes', 'no']
+        issue_found = False
+        stats.total_inspected += 1
+
+        for entity in etype.entities[lang_code]['entities']:
+            value = entity['value']
+            synonyms = entity['synonyms']
+
+            if any(item in value for item in yes_no):
+                issue_found = True
+
+            elif any(item in synonyms for item in yes_no):
+                issue_found = True
+
+            if issue_found:
+                stats.total_issues += 1
+                message = 'R009: Yes/No Entities Present in Agent'
+                self.entity_type_logger(etype, message)
 
         return stats
