@@ -4,11 +4,28 @@ import logging
 import re
 import os
 
+from typing import Union, List
+from rich.logging import RichHandler
+from rich.console import Console
+from rich.markdown import Markdown
+
+console = Console(log_time=False, log_path=False)
+
+keywords = ['Flows Directory', 'Entity Types Directory', 'Test Cases Directory', 'Intents Directory']
+handler = RichHandler(
+    enable_link_path=False,
+    keywords=keywords,
+    show_time=False,
+    show_level=False,
+    show_path=False,
+    tracebacks_word_wrap=False)
 
 # logging config
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
+    handlers=[handler],
+    force=True
     )
 
 class RulesDefinitions:
@@ -16,9 +33,10 @@ class RulesDefinitions:
 
     @staticmethod
     def create_link(resource):
+        link = None
+
         if resource.agent_id and resource.agent_id != '':
             base = 'https://dialogflow.cloud.google.com/cx/'
-            link = None
 
             if resource.resource_type == 'fulfillment':
                 link_map = {
@@ -38,95 +56,6 @@ class RulesDefinitions:
 
         return link
 
-    def page_logger_output(self, resource, message: str) -> None:
-        """Consolidated logging method for Page rules."""
-        link = self.create_link(resource)
-
-        # https://dialogflow.cloud.google.com/cx/{agent_id}/flows/468aa549-ae58-46a5-b9ca-a8ef30b4771f/flow_creation?pageId=c4b66bc4-71dc-4732-a8e6-23ddfdf2dd18
-        if resource.verbose and link:
-            logging.info(
-                '%s:%s:%s: \n%s: \n%s\n%s\n',
-                resource.page.flow.display_name,
-                resource.page.display_name,
-                resource.trigger,
-                message,
-                resource.text,
-                link)
-
-
-        elif resource.verbose:
-            logging.info(
-                '%s:%s:%s: \n%s: \n%s\n',
-                resource.page.flow.display_name,
-                resource.page.display_name,
-                resource.trigger,
-                message,
-                resource.text)
-
-        else:
-            logging.info(
-                '%s:%s:%s: %s',
-                resource.page.flow.display_name,
-                resource.page.display_name,
-                resource.trigger,
-                message)
-
-    def intent_logger_output(self, intent, message: str) -> None:
-        """Consolidated logging method for Intent rules."""
-        link = None
-        if intent.agent_id:
-            link = self.create_link(intent)
-
-        if intent.verbose and link:
-            logging.info(
-                '%s:%s\n%s\n',
-                intent.display_name,
-                message,
-                link)
-    
-        elif intent.verbose:
-            logging.info(
-                '%s:%s',
-                intent.display_name,
-                message)
-        else:
-            logging.info(
-                '%s:%s',
-                intent.display_name,
-                message)
-
-    def test_case_logger_output(
-        self, tc, phrase: str, intent: str, message: str) -> None:
-        """Consolidated logging method for Test Case rules."""
-        link = self.create_link(tc)
-
-        if tc.verbose and link:
-            logging.info(
-                '%s \nTraining Phrase: %s \nIntent: %s\n%s\n%s\n',
-                tc.display_name,
-                phrase,
-                intent,
-                message,
-                link)
-
-        elif tc.verbose:
-            logging.info(
-                '%s \nTraining Phrase: %s \nIntent: %s\n%s\n',
-                tc.display_name,
-                phrase,
-                intent,
-                message)
-
-        else:
-            logging.info(
-                '%s:%s',
-                tc.display_name,
-                message)
-
-    def entity_type_logger(self, etype, message) -> None:
-        """Consolidated logging method for Entity Type rules."""
-        link = self.create_link(etype)
-
     @staticmethod
     def check_if_head_intent(intent):
         """Checks if Intent is Head Intent based on labels and name."""
@@ -137,46 +66,82 @@ class RulesDefinitions:
 
         return hid
 
+    @staticmethod
+    def entity_regex_matching(data: Union[List[str],str], pattern: str):
+        """Checks Entities and synonyms for issues based on regex pattern."""
+        issue_found = False
+
+        if isinstance(data, str):
+            data_match = re.search(pattern, data, flags=re.IGNORECASE)
+
+        elif isinstance(data, List):
+            n = len(data)
+            i = 0
+            while i != n:
+                data_match = re.search(pattern, data[i], flags=re.IGNORECASE)
+                if data_match:
+                    issue_found = True
+                    break
+
+                i += 1
+
+        return issue_found
+
+    def generic_logger(self, resource, rule, message) -> None:
+        """Generic Logger for various resources."""
+        url = self.create_link(resource)
+
+        if resource.resource_type == 'fulfillment':
+            flow = resource.page.flow.display_name
+            link = f'{flow} : [{resource.display_name}]({url})'
+        else:
+            link = f'[{resource.display_name}]({url})'
+
+        output = Markdown(f'{rule} : {link} : {message}')
+
+        if resource.verbose:
+            console.log(output)
+
+
     # RESPONSE MESSAGE RULES
     # closed-choice-alternative
     def closed_choice_alternative_parser(self, route, stats) -> object:
         """Identifies a Closed Choice Alternative Question."""
-        message = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
+        rule = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
             '(A? or B.)'
+        message = f'{route.trigger}'
 
-        # pattern = r'(\sare\s|\sdo\s|should\s|\swill\s|what).*\sor\s.*'
-
-        # updated pattern
         pattern = r'^(What|Where|When|Who|Why|How|Would) (.*) or (.*)\?$'
 
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match:
             stats.total_issues += 1
-            self.page_logger_output(route, message)
+            self.generic_logger(route, rule, message)
 
         return stats
 
     # wh-questions
     def wh_questions(self, route, stats) -> object:
         """Identifies a Wh- Question and checks for appropriate punctuation."""
-        message = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
+        rule = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
+        message = f'{route.trigger}'
 
-        # updated pattern
         pattern = r'^(what|when|where|who|why|how)\b.*\?$'
 
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match and 'event' not in route.trigger:
             stats.total_issues += 1
-            self.page_logger_output(route, message)
+            self.generic_logger(route, rule, message)
 
         return stats
 
     # clarifying-questions
     def clarifying_questions(self, route, stats) -> object:
         """Identifies Clarifying Questions that are missing `?` Punctuation."""
-        message = 'R003: Clarifying Question Should Use `?` Punctuation'
+        rule = 'R003: Clarifying Question Should Use `?` Punctuation'
+        message = f'{route.trigger}'
 
         # updated pattern
         pattern = r'^(what|when|where|who|why|how)\b.*\.$'
@@ -185,7 +150,7 @@ class RulesDefinitions:
 
         if match and 'event' in route.trigger:
             stats.total_issues += 1
-            self.page_logger_output(route, message)
+            self.generic_logger(route, rule, message)
 
         return stats
 
@@ -193,36 +158,50 @@ class RulesDefinitions:
     # INTENT RULES
     # intent-missing-tps
     def missing_training_phrases(self, intent, stats) -> object:
-        """Checks for Intents that are Missing Training Phrases."""
-        message = 'R004: Intent is Missing Training Phrases.'
+        """Checks for Intents that are Missing Training Phrases"""
+        rule = 'R004: Intent is Missing Training Phrases.'
+        message = ''
 
         stats.total_inspected += 1
         stats.total_issues += 1
-        self.intent_logger_output(intent, message)
+        self.generic_logger(intent, rule, message)
 
         return stats
 
     # intent-min-tps
     def min_tps_head_intent(self, intent, lang_code, stats) -> object:
-        """Determines if Intent has min recommended training phrases."""
+        """Determines if Intent has min recommended training phrases"""
         n_tps = len(intent.training_phrases[lang_code]['tps'])
         stats.total_inspected += 1
 
         hid = self.check_if_head_intent(intent)
 
         if hid and n_tps < 50:
-            message = 'R005: Head Intent Does Not Have Minimum Training '\
-                f'Phrases. ({n_tps} / 50)'
+            rule = 'R005: Head Intent Does Not Have Minimum Training Phrases.'
+            message = f'{n_tps} / 50)'
 
             stats.total_issues += 1
-            self.intent_logger_output(intent, message)
+            self.generic_logger(intent, rule, message)
 
         elif n_tps < 20:
-            message = 'R005: Intent Does Not Have Minimum Training '\
-                f'Phrases. ({n_tps} / 20)'
+            rule = 'R005: Intent Does Not Have Minimum Training Phrases.'
+            message =  f'({n_tps} / 20)'
 
             stats.total_issues += 1
-            self.intent_logger_output(intent, message)
+            self.generic_logger(intent, rule, message)
+
+        return stats
+
+    # intent-missing-metadata
+    def intent_missing_metadata(self, intent, stats) -> object:
+        """Flags Intent that has missing metadata file."""
+        rule = 'R010: Missing Metadata file for Intent'
+        message = ''
+
+        stats.total_inspected += 1
+        stats.total_issues += 1
+
+        self.generic_logger(intent, rule, message)
 
         return stats
 
@@ -230,6 +209,7 @@ class RulesDefinitions:
     # explicit-tps-in-test-cases
     def explicit_tps_in_tcs(self, tc, stats) -> object:
         """Checks that user utterance is an explicit intent training phrase."""
+        rule = 'R007: Explicit Training Phrase Not in Test Case'
         
         for pair in tc.intent_data:
             stats.total_inspected += 1
@@ -237,19 +217,19 @@ class RulesDefinitions:
             intent = pair['intent']
             phrase = pair['user_utterance']
             tps = pair['training_phrases']
-            # tps = tc.associated_intent_data.get(intent, None)
 
             if phrase not in pair['training_phrases']:
-                message = 'R007: Explicit Training Phrase Not in Test Case'
+                message = f'[Utterance: {phrase} Intent: {intent}]'
 
                 stats.total_issues += 1
-                self.test_case_logger_output(tc, phrase, intent, message)
+                self.generic_logger(tc, rule, message)
 
         return stats
 
     # invalid-intent-in-test-cases
     def invalid_intent_in_tcs(self, tc, stats) -> object:
         """Check that a listed Intent in the Test Case exists in the agent."""
+        rule = 'R008: Invalid Intent in Test Case'
 
         for pair in tc.intent_data:
             if pair['status'] == 'invalid_intent':
@@ -259,8 +239,8 @@ class RulesDefinitions:
                 intent = pair['intent']
                 phrase = pair['user_utterance']
 
-        message = 'R008: Invalid Intent in Test Case'
-        self.test_case_logger_output(tc, phrase, intent, message)
+        message = ''
+        self.generic_logger(tc, rule, message)
 
         return stats
 
@@ -276,15 +256,20 @@ class RulesDefinitions:
             value = entity['value']
             synonyms = entity['synonyms']
 
-            if any(item in value for item in yes_no):
+            pattern = r'^(?:yes|no)$'
+
+            issue_found = self.entity_regex_matching(value, pattern)
+
+            value_match = re.search(pattern, value, flags=re.IGNORECASE)
+            if value_match:
                 issue_found = True
 
-            elif any(item in synonyms for item in yes_no):
-                issue_found = True
+            issue_found = self.entity_regex_matching(synonyms, pattern)
 
             if issue_found:
                 stats.total_issues += 1
-                message = 'R009: Yes/No Entities Present in Agent'
-                self.entity_type_logger(etype, message)
+                rule = 'R009: Yes/No Entities Present in Agent'
+                message = f'{etype.kind}'
+                self.generic_logger(etype, rule, message)
 
         return stats
