@@ -32,6 +32,7 @@ class CxLint:
     def __init__(
         self,
         agent_id: str = None,
+        agent_type: str = None,
         intent_pattern: str = None,
         load_gcs: bool = False,
         report: bool = False,
@@ -52,6 +53,9 @@ class CxLint:
 
         if agent_id:
             self.update_config('AGENT ID', agent_id)
+
+        if agent_type:
+            self.update_config('AGENT TYPE', agent_type)
 
         if intent_pattern:
             self.update_config('INTENTS', intent_pattern)
@@ -100,21 +104,15 @@ class CxLint:
             data = self.transform_list_to_str(data)
             config.set(section, 'include', data)
 
+        if section == 'AGENT TYPE':
+            config.set(section, 'type', data)
+
         if section == 'INTENTS':
             config.set(section, 'pattern', data)
 
         if section == 'TEST CASE TAGS':
             data = self.transform_list_to_str(data)
             self.read_and_append_to_config(section, 'include', data)
-
-            # if isinstance(data, str):
-            #     self.read_and_append_to_config(section, 'include', data)
-            # elif isinstance(data, List):
-            #     tag_string = ','.join(data)
-            #     self.read_and_append_to_config(section, 'include', tag_string)
-            # else:
-            #     raise ('Input must be one of the following formats: `str` | '\
-            #         'List[`str`]')
 
         if section == 'TEST CASE DISPLAY NAME PATTERN':
             config.set(section, 'pattern', data)        

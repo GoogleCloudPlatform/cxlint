@@ -37,6 +37,13 @@ class Common:
         return msg_dict
 
     @staticmethod
+    def load_agent_type(config: ConfigParser) -> Dict[str,str]:
+        """Loads the config file for agent type."""
+        agent_type = config['AGENT TYPE']['type']
+
+        return agent_type
+
+    @staticmethod
     def load_resource_filter(config: ConfigParser) -> List[str]:
         """Loads the config file for agent resource filtering."""
         resource_filter = config['AGENT RESOURCES']['include'].replace(

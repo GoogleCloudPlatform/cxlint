@@ -25,6 +25,13 @@ include=
 #    testCasees,
 #    webhooks
 
+# Certain linter rules are only applicable to Voice-style agents as they can affect
+# attributes that are Voice-only like DTMF, ASR configs, TTS prosody, etc.
+# Agent Types can be oneof: `chat`, `voice`
+# The default setting is `voice`
+[AGENT TYPE]
+type=voice
+
 [FLOWS]
 include=
 

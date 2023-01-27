@@ -60,6 +60,7 @@ class Flows:
         config: ConfigParser):
         self.verbose = verbose
         self.config = config
+        self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions()
@@ -163,19 +164,22 @@ class Flows:
 
     def lint_agent_responses(self, route: Fulfillment, stats: LintStats) -> str:
         """Executes all Text-based Fulfillment linter rules."""
-
+        voice = False
         route.verbose = self.verbose
 
+        if self.agent_type == 'voice':
+            voice = True
+
         # closed-choice-alternative
-        if self.disable_map.get('closed-choice-alternative', True):
+        if self.disable_map.get('closed-choice-alternative', True) and voice:
             stats = self.rules.closed_choice_alternative_parser(route, stats)
 
         # wh-questions
-        if self.disable_map.get('wh-questions', True):
+        if self.disable_map.get('wh-questions', True) and voice:
             stats = self.rules.wh_questions(route, stats)
 
         # clarifying-questions
-        if self.disable_map.get('clarifying-questions', True):
+        if self.disable_map.get('clarifying-questions', True) and voice:
             stats = self.rules.clarifying_questions(route, stats)
 
         return stats
