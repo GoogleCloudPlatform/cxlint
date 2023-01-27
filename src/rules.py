@@ -9,7 +9,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 from rich.markdown import Markdown
 
-console = Console(log_time=False, log_path=False)
+console = Console(log_time=False, log_path=False, width=200)
 
 keywords = ['Flows Directory', 'Entity Types Directory', 'Test Cases Directory', 'Intents Directory']
 handler = RichHandler(
