@@ -107,8 +107,7 @@ class Intents:
                 meta_file.close()
 
         except FileNotFoundError as err:
-            logging.info('ERROR: Missing Metadata file for Intent: %s\n', \
-                intent.display_name)
+            stats = self.rules.intent_missing_metadata(intent, stats)
 
         return stats
 
