@@ -97,10 +97,13 @@ class RulesDefinitions:
         else:
             link = f'[link={url}]{resource.display_name}[/link]'
 
-        output = f'{rule} : {link} : {message}'
-
         if resource.verbose:
-            console.log(output)
+            output = f'{rule} : {link} : {message}'
+
+        else:
+            output = f'{rule} : {link}'
+
+        console.log(output)
 
 
     # RESPONSE MESSAGE RULES
