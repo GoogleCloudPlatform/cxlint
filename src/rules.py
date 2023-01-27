@@ -9,7 +9,7 @@ from rich.logging import RichHandler
 from rich.console import Console
 from rich.markdown import Markdown
 
-console = Console(log_time=False, log_path=False, width=200)
+console = Console(log_time=False, log_path=False, width=200, color_system='truecolor')
 
 keywords = ['Flows Directory', 'Entity Types Directory', 'Test Cases Directory', 'Intents Directory']
 handler = RichHandler(
@@ -93,11 +93,11 @@ class RulesDefinitions:
 
         if resource.resource_type == 'fulfillment':
             flow = resource.page.flow.display_name
-            link = f'{flow} : [{resource.display_name}]({url})'
+            link = f'[link={url}]{flow} : {resource.display_name}[/link]'
         else:
-            link = f'[{resource.display_name}]({url})'
+            link = f'[link={url}]{resource.display_name}[/link]'
 
-        output = Markdown(f'{rule} : {link} : {message}')
+        output = f'{rule} : {link} : {message}'
 
         if resource.verbose:
             console.log(output)
