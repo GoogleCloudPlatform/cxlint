@@ -135,7 +135,7 @@ class EntityTypes:
 
     def lint_entity_types_directory(self, agent_local_path: str):
         """Linting the Entity Types dir in the JSON Package structure."""
-        start_message = f'{"#" * 10} Begin Enity Types Directory Linter'
+        start_message = f'{"#" * 10} Begin Entity Types Directory Linter'
         logging.info(start_message)
 
         stats = LintStats()
@@ -147,6 +147,7 @@ class EntityTypes:
         # linting starts here
         for entity_type_path in entity_type_paths:
             etype = EntityType()
+            etype.verbose = self.verbose
             etype.agent_id = self.agent_id
             etype.dir_path = entity_type_path
             stats = self.lint_entity_type(etype, stats)
