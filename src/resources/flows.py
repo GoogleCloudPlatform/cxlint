@@ -43,6 +43,7 @@ class Page:
 class Fulfillment:
     """Used to track current Fulfillment Attributes."""
     agent_id: str = None
+    display_name: str = None # Inherit from Page easy logging
     has_webhook: bool = False
     page: Page = None
     text: str = None
@@ -244,6 +245,7 @@ class Flows:
 
         for route_data in page.routes:
             route = Fulfillment(page=page)
+            route.display_name = route.page.display_name
             route.agent_id = page.agent_id
             route.resource_type = 'fulfillment'
             route.trigger = self.get_trigger_info(route_data, 'transitionRoutes')
@@ -330,7 +332,7 @@ class Flows:
         the Flow object, all files in the transitionRouteGroups dir and all
         files in the pages dir.
         """
-        start_message = f'{"#" * 10} Begin Flow Directory Linter'
+        start_message = f'{"#" * 10} Begin Flows Directory Linter'
         logging.info(start_message)
 
         stats = LintStats()
