@@ -153,11 +153,11 @@ class Flows:
         """Extract trigger info from route based on primary key."""
 
         if primary_key == 'eventHandlers':
-            trigger = f'event:{resource["event"]}'
+            trigger = f'event : {resource["event"]}'
 
         if primary_key == 'transitionRoutes':
             intent_condition = self.collect_transition_route_trigger(resource)
-            trigger = f'route:{intent_condition}'
+            trigger = f'route : {intent_condition}'
 
         return trigger
 
