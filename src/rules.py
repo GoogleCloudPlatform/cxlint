@@ -181,7 +181,7 @@ class RulesDefinitions:
 
         if hid and n_tps < 50:
             rule = 'R005: Head Intent Does Not Have Minimum Training Phrases.'
-            message = f'{n_tps} / 50)'
+            message = f'({n_tps} / 50)'
 
             stats.total_issues += 1
             self.generic_logger(intent, rule, message)
@@ -222,7 +222,7 @@ class RulesDefinitions:
             tps = pair['training_phrases']
 
             if phrase not in pair['training_phrases']:
-                message = f'[Utterance: {phrase} Intent: {intent}]'
+                message = f'[Utterance: {phrase} | Intent: {intent}]'
 
                 stats.total_issues += 1
                 self.generic_logger(tc, rule, message)
