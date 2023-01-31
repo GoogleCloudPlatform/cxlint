@@ -44,11 +44,18 @@ class RulesDefinitions:
                         f'/flow_creation?pageId={resource.page.resource_id}'
                         }
 
+            elif resource.resource_type == 'page':
+                link_map = {
+                    'page': f'/flows/{resource.flow.resource_id}'\
+                        f'/flow_creation?pageId={resource.resource_id}'
+                }
+
             else:
                 link_map = {
                     'test_case': f'/testCases/{resource.resource_id}',
                     'intent': f'/intents?id={resource.resource_id}',
-                    'entity_type': f'/entityTypes?id={resource.resource_id}'
+                    'entity_type': f'/entityTypes?id={resource.resource_id}',
+                    'page': f'flow_creation?'
                     }
 
             path = link_map.get(resource.resource_type, None)
@@ -93,6 +100,9 @@ class RulesDefinitions:
 
         if resource.resource_type == 'fulfillment':
             flow = resource.page.flow.display_name
+            link = f'[link={url}]{flow} : {resource.page.display_name}[/link]'
+        elif resource.resource_type == 'page':
+            flow = resource.flow.display_name
             link = f'[link={url}]{flow} : {resource.display_name}[/link]'
         else:
             link = f'[link={url}]{resource.display_name}[/link]'
@@ -104,6 +114,22 @@ class RulesDefinitions:
             output = f'{rule} : {link}'
 
         console.log(output)
+
+    # PAGE RULES
+    # missing-webhook-event-handlers
+    def missing_webhook_event_handlers(self, page, stats) -> object:
+        """Checks for missing Event Handlers on pages that use Webhooks."""
+        rule = 'R011: Missing Webhook Event Handlers'
+
+        stats.total_inspected += 1
+
+        if page.has_webhook and not page.has_webhook_event_handler:
+            message = ''
+
+            stats.total_issues += 1
+            self.generic_logger(page, rule, message)
+
+        return stats
 
 
     # RESPONSE MESSAGE RULES

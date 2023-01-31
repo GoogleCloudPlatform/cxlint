@@ -54,6 +54,7 @@ disable=
 #    intent-min-tps,
 #    explicit-tps-in-test-cases
 #    invalid-intent-in-test-cases
+#    missing-webhook-event-handlers
 
 
 # For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.

@@ -32,8 +32,11 @@ class Page:
     agent_id: str = None
     data: Dict[str, Any] = None
     display_name: str = None
+    entry: Dict[str, Any] = None
     events: List[object] = None
     flow: Flow = None
+    has_webhook: bool = False
+    has_webhook_event_handler: bool = False
     page_file: str = None
     resource_id: str = None
     resource_type: str = 'page'
@@ -43,12 +46,12 @@ class Page:
 class Fulfillment:
     """Used to track current Fulfillment Attributes."""
     agent_id: str = None
+    data: Dict[str, Any] = None
     display_name: str = None # Inherit from Page easy logging
-    has_webhook: bool = False
+    fulfillment_type: str = None # transition_route | event
     page: Page = None
     text: str = None
     trigger: str = None
-    # resource: str = None
     resource_type: str = 'fulfillment'
     verbose: bool = False
 
@@ -104,6 +107,33 @@ class Flows:
 
         return page_paths
 
+    @staticmethod
+    def check_for_webhook(page: Page, path: Dict[str, Any]):
+        """Check the current route for existence of webhook."""
+        if 'webhook' in path:
+            page.has_webhook = True
+
+    @staticmethod
+    def check_for_webhook_event_handlers(route: Fulfillment):
+        """Check for Webhook Error Event Handler on Page.
+        
+        In this method, we're interested in the following conditions:
+         - Page is currently flagged w/webhook = True
+         - Page HAS NOT been flagged w/having a webhook error handler
+         - The trigger MATCHES the pattern 'webhook.error'
+         
+        If a Page and its Route meet all the criteria, we'll flip the bit.
+        Otherwise, the webhook handler bit will remain False, causing a rule
+        flag."""
+
+        if all(
+            [route.page.has_webhook,
+            not route.page.has_webhook_event_handler,
+            'webhook.error' in route.trigger]):
+            
+            route.page.has_webhook_event_handler = True
+
+
     def update_route_parameters(self, route: Fulfillment, item: Dict[str,str]):
         """Update the Route Parameters map based on new info."""
         flow_name = route.page.flow.display_name
@@ -134,30 +164,30 @@ class Flows:
         trigger = []
         intent_name = None
 
-        if 'intent' in route:
+        if 'intent' in route.data:
             trigger.append('intent')
-            intent_name = route.get("intent", None)
+            intent_name = route.data.get("intent", None)
 
-        if 'condition' in route:
+        if 'condition' in route.data:
             trigger.append('condition')
     
         if len(trigger) > 0:
             trigger = '+'.join(trigger)
         
         if self.verbose and intent_name:
-            return f'{trigger}:{intent_name}'
+            return f'{trigger} : {intent_name}'
 
         else:
             return trigger
 
-    def get_trigger_info(self, resource, primary_key):
+    def get_trigger_info(self, route):
         """Extract trigger info from route based on primary key."""
 
-        if primary_key == 'eventHandlers':
-            trigger = f'event : {resource["event"]}'
+        if route.fulfillment_type == 'event':
+            trigger = f'event : {route.data.get("event", None)}'
 
-        if primary_key == 'transitionRoutes':
-            intent_condition = self.collect_transition_route_trigger(resource)
+        if route.fulfillment_type == 'transition_route':
+            intent_condition = self.collect_transition_route_trigger(route)
             trigger = f'route : {intent_condition}'
 
         return trigger
@@ -219,19 +249,23 @@ class Flows:
         page: Page,
         stats: LintStats):
         """Parse through all Page Event Handlers and lint."""
-        tf_key = 'triggerFulfillment'
-
         if not page.events:
             return stats
 
         for route_data in page.events:
             route = Fulfillment(page=page)
+            route.data = route_data
             route.agent_id = page.agent_id
-            route.trigger = self.get_trigger_info(route_data, 'eventHandlers')
-            path = route_data.get(tf_key, None)
+            route.fulfillment_type = 'event'
+            route.trigger = self.get_trigger_info(route)
+            path = route.data.get('triggerFulfillment', None)
+            event = route.data.get('event', None)
 
-            if not path:
+            if not path and not event:
                 continue
+
+            # Flag for Webhook Handler
+            self.check_for_webhook_event_handlers(route)
 
             stats = self.lint_fulfillment_type(stats, route, path, 'messages')
 
@@ -249,11 +283,11 @@ class Flows:
 
         for route_data in page.routes:
             route = Fulfillment(page=page)
-            route.display_name = route.page.display_name
+            route.data = route_data
             route.agent_id = page.agent_id
-            route.resource_type = 'fulfillment'
-            route.trigger = self.get_trigger_info(route_data, 'transitionRoutes')
-            path = route_data.get(tf_key, None)
+            route.fulfillment_type = 'transition_route'
+            route.trigger = self.get_trigger_info(route)
+            path = route.data.get(tf_key, None)
 
             if not path:
                 continue
@@ -265,19 +299,58 @@ class Flows:
 
         return stats
 
+    def lint_entry(self, page: Page, stats: LintStats):
+        """Lint Entry Fulfillment on a single page file."""
+        tf_key = 'triggerFulfillment'
+
+        if not page.entry:
+            return stats
+
+        # The Entry Fulfillment to a Page only has 1 "route" (i.e. itself)
+        # so there is no need to loop through multiple routes, as they don't
+        # exist for Entry Fulfillment.
+
+        route = Fulfillment(page=page)
+        route.data = page.entry
+        route.agent_id = page.agent_id
+        route.fulfillment_type = 'entry'
+        route.trigger = 'entry'
+        path = route.data
+
+        self.check_for_webhook(page, path)
+
+        stats = self.lint_fulfillment_type(stats, route, path, 'messages')
+
+        return stats
+
+    def lint_webhooks(self, page: Page, stats: LintStats):
+        """Lint a Page with Webhook setup best practice rules."""
+
+        # missing-webhook-event-handlers
+        if self.disable_map.get('missing-webhook-event-handlers', True):
+            stats = self.rules.missing_webhook_event_handlers(page, stats)
+
+        return stats
+        
+
     def lint_page(self, page: Page, stats: LintStats):
         """Lint a Single Page file."""
         page.display_name = Common.parse_filepath(page.page_file, 'page')
 
         with open(page.page_file, 'r', encoding='UTF-8') as page_file:
             page.data = json.load(page_file)
+            page.verbose = self.verbose
+            page.entry = page.data.get('entryFulfillment', None)
             page.events = page.data.get('eventHandlers', None)
             page.routes = page.data.get('transitionRoutes', None)
 
             page.resource_id = page.data.get('name', None)
 
-            stats = self.lint_events(page, stats)
+            # Order of linting is important here
+            stats = self.lint_entry(page, stats)
             stats = self.lint_routes(page, stats)
+            stats = self.lint_events(page, stats)
+            stats = self.lint_webhooks(page, stats)
 
             page_file.close()
 
@@ -295,6 +368,7 @@ class Flows:
             page.data = json.load(flow_file)
             page.events = page.data.get('eventHandlers', None)
             page.routes = page.data.get('transitionRoutes', None)
+            page.verbose = self.verbose
 
             flow.resource_id = page.data.get('name', None)
             page.agent_id = flow.agent_id
