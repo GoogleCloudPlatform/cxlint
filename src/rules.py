@@ -189,7 +189,7 @@ class RulesDefinitions:
     def missing_training_phrases(self, intent, stats) -> object:
         """Checks for Intents that are Missing Training Phrases"""
         rule = 'R004: Intent is Missing Training Phrases.'
-        message = ''
+        message = f'{intent.training_phrases}'
 
         stats.total_inspected += 1
         stats.total_issues += 1
@@ -207,14 +207,14 @@ class RulesDefinitions:
 
         if hid and n_tps < 50:
             rule = 'R005: Head Intent Does Not Have Minimum Training Phrases.'
-            message = f'({n_tps} / 50)'
+            message = f'{lang_code} : ({n_tps} / 50)'
 
             stats.total_issues += 1
             self.generic_logger(intent, rule, message)
 
         elif n_tps < 20:
             rule = 'R005: Intent Does Not Have Minimum Training Phrases.'
-            message =  f'({n_tps} / 20)'
+            message =  f'{lang_code} : ({n_tps} / 20)'
 
             stats.total_issues += 1
             self.generic_logger(intent, rule, message)
