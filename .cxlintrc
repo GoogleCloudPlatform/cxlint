@@ -36,9 +36,11 @@ type=voice
 include=
 
 # Linting of intents can be filtered by providing a string pattern to match
-# against the Intent Display Names.
+# against the Intent Display Names. You can choose `include` or `exclude` patterns.
 [INTENTS]
-pattern=
+include=
+
+exclude=
 
 # Disable the message, report, category or checker with the given id(s).
 # The disable key expects a comma separated list of symbolic names for

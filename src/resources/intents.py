@@ -23,6 +23,7 @@ class Intent:
     description: str = None
     display_name: str = None
     dir_path: str = None
+    filtered: bool = False
     labels: Dict[str, str] = None
     metadata_file: str = None
     resource_id: str = None
@@ -37,12 +38,23 @@ class Intents:
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions()
-        self.display_name_filter = self.load_display_name_filter(config)
+        self.include_filter = self.load_include_filter(config)
+        self.exclude_filter = self.load_exclude_filter(config)
 
     @staticmethod
-    def load_display_name_filter(config: ConfigParser) -> str:
-        """Loads the matching pattern for Intent display names."""
-        pattern = config['INTENTS']['pattern']
+    def load_include_filter(config: ConfigParser) -> str:
+        """Loads the include pattern for Intent display names."""
+        pattern = config['INTENTS']['include']
+
+        return pattern
+
+    @staticmethod
+    def load_exclude_filter(config: ConfigParser) -> str:
+        """Loads the exclude pattern for Intent display names."""
+        pattern = config['INTENTS']['exclude']
+
+        if pattern == '':
+            pattern = None
 
         return pattern
 
@@ -90,6 +102,21 @@ class Intents:
             intent_paths.append(intent_dir_path)
 
         return intent_paths
+
+    def check_intent_filters(self, intent: Intent) -> Intent:
+        """Determines if the Intent should be filtered for linting."""
+        if self.include_filter:
+            if self.include_filter in intent.display_name:
+                intent.filtered = False
+
+            else:
+                intent.filtered = True
+
+        if self.exclude_filter:
+            if self.exclude_filter in intent.display_name:
+                intent.filtered = True
+
+        return intent
 
     def lint_intent_metadata(self, intent: Intent, stats: LintStats):
         """Lint the metadata file for a single Intent."""
@@ -146,9 +173,9 @@ class Intents:
     def lint_intent(self, intent: Intent, stats: LintStats):
         """Lint a single Intent directory and associated files."""
         intent.display_name = Common.parse_filepath(intent.dir_path, 'intent')
+        intent = self.check_intent_filters(intent)
 
-        # Filter Intents to lint by display name
-        if self.display_name_filter in intent.display_name:
+        if not intent.filtered:
             stats.total_intents += 1
             stats = self.lint_intent_metadata(intent, stats)
             stats = self.lint_training_phrases(intent, stats)

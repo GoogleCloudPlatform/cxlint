@@ -33,7 +33,8 @@ class CxLint:
         self,
         agent_id: str = None,
         agent_type: str = None,
-        intent_pattern: str = None,
+        intent_include_pattern: str = None,
+        intent_exclude_pattern: str = None,
         load_gcs: bool = False,
         report: bool = False,
         resource_filter: Union[List[str], str] = None,
@@ -57,8 +58,14 @@ class CxLint:
         if agent_type:
             self.update_config('AGENT TYPE', agent_type)
 
-        if intent_pattern:
-            self.update_config('INTENTS', intent_pattern)
+        if intent_exclude_pattern or intent_include_pattern:
+            self.update_intent_config(
+                intent_include_pattern,
+                intent_exclude_pattern
+            )
+
+        if intent_include_pattern:
+            self.update_config('INTENTS', intent_include_pattern)
 
         if resource_filter:
             self.update_config('AGENT RESOURCES', resource_filter)
@@ -94,6 +101,15 @@ class CxLint:
                     'List[`str`]')
 
         return res
+
+    def update_intent_config(self, include_pattern: str, exclude_pattern: str):
+        """Handle updates to the Intent include/exclude lists."""
+        if include_pattern:
+            config.set('INTENTS', 'include', include_pattern)
+
+        if exclude_pattern:
+            config.set('INTENTS', 'exclude', exclude_pattern)
+
 
     def update_config(self, section: str, data: Any):
         """Update the Config file based on user provided kwargs."""
