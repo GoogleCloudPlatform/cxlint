@@ -292,6 +292,9 @@ class Flows:
             if not path:
                 continue
 
+            # Flag for Webhook Handler
+            self.check_for_webhook(page, path)
+
             stats = self.lint_fulfillment_type(stats, route, path, 'messages')
 
             # Preset Params can be linted here
@@ -374,8 +377,10 @@ class Flows:
             page.agent_id = flow.agent_id
             page.resource_id = 'START_PAGE'
 
-            stats = self.lint_events(page, stats)
+            # Order of linting is important
             stats = self.lint_routes(page, stats)
+            stats = self.lint_events(page, stats)
+            stats = self.lint_webhooks(page, stats)
 
             flow_file.close()
 
