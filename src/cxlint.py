@@ -40,7 +40,7 @@ class CxLint:
         resource_filter: Union[List[str], str] = None,
         test_case_pattern: str = None,
         test_case_tags: Union[List[str], str] = None,
-        verbose: bool = False):
+        verbose: bool = True):
 
         if load_gcs:
             self.gcs = GcsUtils()
