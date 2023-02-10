@@ -4,6 +4,9 @@ import configparser
 import os
 import logging
 
+from rich.console import Console
+from rich.logging import RichHandler
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Tuple, Union
 
@@ -15,11 +18,24 @@ from resources.entity_types import EntityTypes
 from resources.intents import Intents
 from resources.test_cases import TestCases
 
+console = Console(record=True, log_time=False, log_path=False, width=200, color_system='truecolor')
+
+keywords = ['Flows Directory', 'Entity Types Directory', 'Test Cases Directory', 'Intents Directory']
+handler = RichHandler(
+    enable_link_path=False,
+    keywords=keywords,
+    show_time=False,
+    show_level=False,
+    show_path=False,
+    tracebacks_word_wrap=False)
+
 # logging config
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
-)
+    handlers=[handler],
+    force=True
+    )
 
 # configparser
 config = configparser.ConfigParser()
@@ -36,7 +52,7 @@ class CxLint:
         intent_include_pattern: str = None,
         intent_exclude_pattern: str = None,
         load_gcs: bool = False,
-        report: bool = False,
+        output_file: str = None,
         resource_filter: Union[List[str], str] = None,
         test_case_pattern: str = None,
         test_case_tags: Union[List[str], str] = None,
@@ -71,11 +87,12 @@ class CxLint:
             self.update_config('AGENT RESOURCES', resource_filter)
 
         self.resource_filter = Common.load_resource_filter(config)
+        self.output_file = output_file
 
-        self.entity_types = EntityTypes(verbose, config)
-        self.intents = Intents(verbose, config)
-        self.flows = Flows(verbose, config)
-        self.test_cases = TestCases(verbose, config)
+        self.entity_types = EntityTypes(verbose, config, console)
+        self.intents = Intents(verbose, config, console)
+        self.flows = Flows(verbose, config, console)
+        self.test_cases = TestCases(verbose, config, console)
 
     @staticmethod
     def read_and_append_to_config(section: str, key: str, data: Any):
@@ -142,7 +159,8 @@ class CxLint:
         #     data = json.load(agent_data)
 
         start_message = f'{"=" * 5} LINTING AGENT {"=" * 5}\n'
-        logging.info(start_message)
+        # logging.info(start_message)
+        console.log(start_message)
 
         if self.resource_filter.get('flows', False):
             self.flows.lint_flows_directory(agent_local_path)
@@ -155,3 +173,6 @@ class CxLint:
 
         if self.resource_filter.get('test_cases', False):
             self.test_cases.lint_test_cases_directory(agent_local_path)
+
+        if self.output_file:
+            console.save_text(self.output_file)

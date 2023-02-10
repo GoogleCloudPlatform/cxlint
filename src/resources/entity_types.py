@@ -9,12 +9,6 @@ from typing import Dict, List, Any, Tuple
 from common import Common, LintStats
 from rules import RulesDefinitions
 
-# logging config
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-)
-
 @dataclass
 class EntityType:
     """"Used to track current Flow Attributes."""
@@ -33,12 +27,14 @@ class EntityTypes:
     def __init__(
         self,
         verbose: bool,
-        config: ConfigParser):
+        config: ConfigParser,
+        console):
         self.verbose = verbose
+        self.console = console
         self.config = config
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions()
+        self.rules = RulesDefinitions(self.console)
 
     @staticmethod
     def build_entity_type_path_list(agent_local_path: str):
@@ -136,7 +132,7 @@ class EntityTypes:
     def lint_entity_types_directory(self, agent_local_path: str):
         """Linting the Entity Types dir in the JSON Package structure."""
         start_message = f'{"#" * 10} Begin Entity Types Directory Linter'
-        logging.info(start_message)
+        self.console.log(start_message)
 
         stats = LintStats()
 
@@ -160,4 +156,4 @@ class EntityTypes:
             f'linted. \n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} inspected.'\
             f'\nYour Agent Entity Types rated at {rating:.2f}/10\n\n'
-        logging.info(end_message)
+        self.console.log(end_message)

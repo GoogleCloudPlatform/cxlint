@@ -9,12 +9,6 @@ from typing import Dict, List, Any, Tuple
 from common import Common, LintStats
 from rules import RulesDefinitions
 
-# logging config
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-)
-
 @dataclass
 class Intent:
     """Used to track current Intent Attributes."""
@@ -33,11 +27,12 @@ class Intent:
 
 class Intents:
     """Intent linter methods and functions."""
-    def __init__(self, verbose: bool, config: ConfigParser):
+    def __init__(self, verbose: bool, config: ConfigParser, console):
         self.verbose = verbose
+        self.console = console
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions()
+        self.rules = RulesDefinitions(self.console)
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
 
@@ -197,7 +192,7 @@ class Intents:
         training phrase files and metadata objects for each Intent.
         """
         start_message = f'{"#" * 10} Begin Intents Directory Linter'
-        logging.info(start_message)
+        self.console.log(start_message)
 
         stats = LintStats()
 
@@ -222,4 +217,4 @@ class Intents:
             f'\n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} inspected.'\
             f'\nYour Agent Intents rated at {rating:.2f}/10\n\n'
-        logging.info(end_message)
+        self.console.log(end_message)

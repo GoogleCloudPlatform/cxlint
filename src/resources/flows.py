@@ -9,12 +9,6 @@ from typing import Dict, List, Any, Tuple
 from common import Common, LintStats
 from rules import RulesDefinitions
 
-# logging config
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-)
-
 @dataclass
 class Flow:
     """"Used to track current Flow Attributes."""
@@ -60,13 +54,15 @@ class Flows:
     def __init__(
         self,
         verbose: bool,
-        config: ConfigParser):
+        config: ConfigParser,
+        console):
         self.verbose = verbose
+        self.console = console
         self.config = config
         self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions()
+        self.rules = RulesDefinitions(self.console)
         self.route_parameters = {}
 
     @staticmethod
@@ -393,7 +389,7 @@ class Flows:
         flow.display_name = Common.parse_filepath(flow.dir_path, 'flow')
 
         message = f'{"*" * 15} Flow: {flow.display_name}'
-        logging.info(message)
+        self.console.log(message)
 
         flow.start_page_file = f'{flow.dir_path}/{flow.display_name}.json'
 
@@ -416,7 +412,7 @@ class Flows:
         files in the pages dir.
         """
         start_message = f'{"#" * 10} Begin Flows Directory Linter'
-        logging.info(start_message)
+        self.console.log(start_message)
 
         stats = LintStats()
 
@@ -439,7 +435,7 @@ class Flows:
             f'\n{stats.total_issues} issues found out of '\
             f'{stats.total_inspected} fulfillments inspected.'\
             f'\nYour Agent Flows rated at {rating:.2f}/10\n\n'
-        logging.info(end_message)
+        self.console.log(end_message)
 
     def lint_pages_directory(self, flow: Flow, stats: LintStats):
         """Linting the Pages dir inside a specific Flow dir."""

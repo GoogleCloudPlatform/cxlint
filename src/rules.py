@@ -5,31 +5,11 @@ import re
 import os
 
 from typing import Union, List
-from rich.logging import RichHandler
-from rich.console import Console
-from rich.markdown import Markdown
-
-console = Console(log_time=False, log_path=False, width=200, color_system='truecolor')
-
-keywords = ['Flows Directory', 'Entity Types Directory', 'Test Cases Directory', 'Intents Directory']
-handler = RichHandler(
-    enable_link_path=False,
-    keywords=keywords,
-    show_time=False,
-    show_level=False,
-    show_path=False,
-    tracebacks_word_wrap=False)
-
-# logging config
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(message)s",
-    handlers=[handler],
-    force=True
-    )
 
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
+    def __init__(self, console):
+        self.console = console
 
     @staticmethod
     def create_link(resource):
@@ -113,7 +93,7 @@ class RulesDefinitions:
         else:
             output = f'{rule} : {link}'
 
-        console.log(output)
+        self.console.log(output)
 
     # PAGE RULES
     # missing-webhook-event-handlers
