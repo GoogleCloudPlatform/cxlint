@@ -89,13 +89,19 @@ class Common:
     def clean_display_name(display_name: str):
         """Replace cspecial haracters from map for the given display name."""
         patterns = {
+            "%22": '"',
+            "%23": "#",
+            "%26": "&",
+            "%27": "'",
             "%28": "(",
             "%29": ")",
-            "%23": "#",
+            "%2c": ",",
             "%2f": "/",
-            "%3f": "?",
             "%3a": ":",
-            "%2c": ","
+            "%3c": "<",
+            "%3d": "=",
+            "%3e": ">",
+            "%3f": "?",
             }
 
         for pattern in patterns:
