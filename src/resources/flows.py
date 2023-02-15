@@ -82,7 +82,7 @@ class Flows:
         Some route transitions go to Flow instead of Page. For these
         transitions, we tag them with `FLOW` for easier identification later.
         However, when reporting on Graph inconsistencies like Dangling or
-        Orphaned pages, we want to remove these from any result sets as they
+        Unreachable pages, we want to remove these from any result sets as they
         are not relevant.
         """
         filtered_set = set()
@@ -94,13 +94,13 @@ class Flows:
         return filtered_set
 
     
-    def find_orphaned_pages(self, flow: Flow):
-        """Find Orphaned Pages in the graph.
+    def find_unreachable_pages(self, flow: Flow):
+        """Find Unreachable Pages in the graph.
         
-        An Orphaned Page is defined as:
+        An Unreachable Page is defined as:
           - A Page which has no incoming edge when traversed from Start Page.
             That is, it is unreachable in the graph by any practical means.
-          - A Page which is connected to a root orphaned page. That is, a page
+          - A Page which is connected to a root unreachable page. That is, a page
             that could have both incoming or outgoing routes, but due to its
             connectedness to the root orphan page, is unreachable in the graph.
 
@@ -108,15 +108,15 @@ class Flows:
           - Active Pages (i.e. Pages that were reachable in the graph)
           - Used Pages (i.e. Pages that were used by some Route)
 
-        If an Orphaned Page has children that it routes to, those children will
+        If an Unreachable Page has children that it routes to, those children will
         appear in Used Pages, although they will ultimately be unreachable.
-        It's possible for an Orphaned Page to route back to an Active Page in
+        It's possible for an Unreachable Page to route back to an Active Page in
         the graph. For these instances, we don't want to count those pages as
-        orphaned, because they are reachable via other sections of the graph.
+        unreachable, because they are reachable via other sections of the graph.
         """
         filtered_set = flow.active_pages.symmetric_difference(flow.graph._used_nodes)
         filtered_set = self.remove_flow_pages_from_set(filtered_set)
-        flow.orphaned_pages.update(filtered_set)
+        flow.unreachable_pages.update(filtered_set)
 
         return flow
 
@@ -134,9 +134,9 @@ class Flows:
 
         The resulting set will consist of 2 types of Pages:
           - Truly Unused Pages
-          - Orphaned Root Pages
+          - Unreachable Root Pages
 
-        Orphaned Root Pages end up in the results due to the fact that no other
+        Unreachable Root Pages end up in the results due to the fact that no other
         Active Page is pointing to them. We remove these from the resulting set
         before presenting the Truly Unused Pages.
         """
@@ -147,14 +147,14 @@ class Flows:
 
         prelim_unused = flow.all_pages.difference(flow.graph._used_nodes)
 
-        # Filter out Orphaned Root Pages
+        # Filter out Unreachable Root Pages
         filtered_set = set()
 
         for page in prelim_unused:
             if page not in flow.graph._edges:
                 filtered_set.add(page)
             else:
-                flow.orphaned_pages.add(page)
+                flow.unreachable_pages.add(page)
 
         flow.unused_pages = filtered_set
 
@@ -171,7 +171,7 @@ class Flows:
         A byproduct of searching for Dangling Pages in the graph is that we can
         produce a set of Active Pages in the graph. These are pages that are
         reachable when traversing from the Start Page. These can then be used
-        to determine Orphaned Pages in another method.
+        to determine Unreachable Pages in another method.
         """
         if page in edges:
             for inner_page in edges[page]:
@@ -260,7 +260,7 @@ class Flows:
         
         In this method we are taking the completed Flow Graph that was built
         for this specific Flow and checking for any design inconsistencies.
-        These include things like Unused, Dangling, and Orphaned pages.
+        These include things like Unused, Dangling, and Unreachable pages.
         """
 
         # unused-pages
@@ -271,9 +271,9 @@ class Flows:
         if self.disable_map.get('dangling-pages', True):
             stats = self.rules.dangling_pages(flow, stats)
 
-        # orphaned-pages
-        if self.disable_map.get('orphaned-pages', True):
-            stats = self.rules.orphaned_pages(flow, stats)
+        # unreachable-pages
+        if self.disable_map.get('unreachable-pages', True):
+            stats = self.rules.unreachable_pages(flow, stats)
 
         return stats
 
@@ -296,7 +296,7 @@ class Flows:
             # Order of Find Operations is important here!
             flow = self.find_unused_pages(flow)
             flow = self.find_dangling_pages(flow)
-            flow = self.find_orphaned_pages(flow)
+            flow = self.find_unreachable_pages(flow)
 
             stats = self.lint_graph(flow, stats)
 

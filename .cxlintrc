@@ -61,7 +61,7 @@ disable=
 #    missing-webhook-event-handlers,
 #    unused-pages,
 #    dangling-pages,
-#    orphaned-pages
+#    unreachable-pages
 
 
 # For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.

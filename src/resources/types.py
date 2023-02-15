@@ -17,7 +17,7 @@ class Flow:
     file_name: str = None # Original File Name of the Flow file (includes special chars)
     filtered: bool = False
     graph: Graph = None
-    orphaned_pages: set = field(default_factory=set)
+    unreachable_pages: set = field(default_factory=set)
     resource_id: str = None
     resource_type: str = 'flow'
     start_page_file: str = None # File Path Location of START_PAGE

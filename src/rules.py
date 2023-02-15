@@ -135,12 +135,12 @@ class RulesDefinitions:
 
         return stats
     
-    # orphaned-pages
-    def orphaned_pages(self, flow: Flow, stats: LintStats) -> LintStats:
-        """Checks for Orphaned Pages in Flow Graph."""
-        rule = 'R014: Orphaned Pages'
+    # unreachable-pages
+    def unreachable_pages(self, flow: Flow, stats: LintStats) -> LintStats:
+        """Checks for Unreachable Pages in Flow Graph."""
+        rule = 'R014: Unreachable Pages'
 
-        for page in flow.orphaned_pages:
+        for page in flow.unreachable_pages:
             resource = Resource()
             resource.agent_id = flow.agent_id
             resource.flow_display_name = flow.display_name
