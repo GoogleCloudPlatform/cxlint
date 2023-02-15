@@ -1,10 +1,33 @@
 """Rule Definitions for CX Lint."""
 
-import logging
 import re
-import os
 
+from dataclasses import dataclass
 from typing import Union, List
+
+@dataclass
+class Resource:
+    """Generic class to store basic Resource data.
+    
+    Since each core class has such varied parameters, this generic class will
+    help to standardize the data fed to the generic logger and the maps used
+    therein.
+    """
+    agent_id: str = None
+    entity_type_display_name: str = None
+    entity_type_id: str = None
+    flow_display_name: str = None
+    flow_id: str = None
+    intent_display_name: str = None
+    intent_id: str = None
+    page_display_name: str = None
+    page_id: str = None
+    resource_type: str = None
+    test_case_display_name: str = None
+    test_case_id: str = None
+    webhook_display_name: str = None
+    webhook_id: str = None
+
 
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
@@ -18,25 +41,17 @@ class RulesDefinitions:
         if resource.agent_id and resource.agent_id != '':
             base = 'https://dialogflow.cloud.google.com/cx/'
 
-            if resource.resource_type == 'fulfillment':
-                link_map = {
-                    'fulfillment': f'/flows/{resource.page.flow.resource_id}'\
-                        f'/flow_creation?pageId={resource.page.resource_id}'
-                        }
+            link_map = {
+                'entity_type': f'/entityTypes?id={resource.entity_type_id}',
+                'flow': f'/flows/{resource.flow_id}',
+                'fulfillment': f'/flows/{resource.flow_id}'\
+                    f'/flow_creation?pageId={resource.page_id}',
+                'intent': f'/intents?id={resource.intent_id}',
+                'page': f'/flows/{resource.flow_id}'\
+                    f'/flow_creation?pageId={resource.page_id}',
+                'test_case': f'/testCases/{resource.test_case_id}',
 
-            elif resource.resource_type == 'page':
-                link_map = {
-                    'page': f'/flows/{resource.flow.resource_id}'\
-                        f'/flow_creation?pageId={resource.resource_id}'
                 }
-
-            else:
-                link_map = {
-                    'test_case': f'/testCases/{resource.resource_id}',
-                    'intent': f'/intents?id={resource.resource_id}',
-                    'entity_type': f'/entityTypes?id={resource.resource_id}',
-                    'page': f'flow_creation?'
-                    }
 
             path = link_map.get(resource.resource_type, None)
             link = base + resource.agent_id + path
@@ -78,22 +93,83 @@ class RulesDefinitions:
         """Generic Logger for various resources."""
         url = self.create_link(resource)
 
-        if resource.resource_type == 'fulfillment':
-            flow = resource.page.flow.display_name
-            link = f'[link={url}]{flow} : {resource.page.display_name}[/link]'
-        elif resource.resource_type == 'page':
-            flow = resource.flow.display_name
-            link = f'[link={url}]{flow} : {resource.display_name}[/link]'
-        else:
-            link = f'[link={url}]{resource.display_name}[/link]'
+        link_map = {
+            'flow': f'[link={url}]{resource.flow_display_name}[/link]',
+            'fulfillment': f'[link={url}]{resource.flow_display_name} : {resource.page_display_name}[/link]',
+            'intent': f'[link={url}]{resource.intent_display_name}[/link]',
+            'page': f'[link={url}]{resource.flow_display_name} : {resource.page_display_name}[/link]',
+            'test_case': f'[link={url}]{resource.test_case_display_name}[/link]',
+            'webhook': f'[link={url}]{resource.webhook_display_name}[/link]',
+        }
 
-        if resource.verbose:
-            output = f'{rule} : {link} : {message}'
-
-        else:
-            output = f'{rule} : {link}'
+        output = f'{rule} : {link_map[resource.resource_type]} : {message}'
 
         self.console.log(output)
+
+    # FLOW RULES
+    # unused-pages
+    def unused_pages(self, flow, stats) -> object:
+        """Checks for Unusued Pages in Flow Graph."""
+        rule = 'R012: Unused Pages'
+
+        for page in flow.unused_pages:
+            resource = Resource()
+            resource.agent_id = flow.agent_id
+            resource.flow_display_name = flow.display_name
+            resource.flow_id = flow.resource_id
+            resource.page_display_name = page
+            resource.page_id = flow.data.get(page, None)
+            resource.resource_type = 'page'
+            message = f'{page}'
+            stats.total_inspected += 1
+            stats.total_issues += 1
+
+            self.generic_logger(resource, rule, message)
+
+        return stats
+    
+    # dangling-pages
+    def dangling_pages(self, flow, stats) -> object:
+        """Checks for Dangling Pages in Flow Graph."""
+        rule = 'R013: Dangling Pages'
+
+        for page in flow.dangling_pages:
+            resource = Resource()
+            resource.agent_id = flow.agent_id
+            resource.flow_display_name = flow.display_name
+            resource.flow_id = flow.resource_id
+            resource.page_display_name = page
+            resource.page_id = flow.data.get(page, None)
+            resource.resource_type = 'page'
+            message = f'{page}'
+            stats.total_inspected += 1
+            stats.total_issues += 1
+
+            self.generic_logger(resource, rule, message)
+
+        return stats
+    
+    # orphaned-pages
+    def orphaned_pages(self, flow, stats) -> object:
+        """Checks for Orphaned Pages in Flow Graph."""
+        rule = 'R014: Orphaned Pages'
+
+        for page in flow.orphaned_pages:
+            resource = Resource()
+            resource.agent_id = flow.agent_id
+            resource.flow_display_name = flow.display_name
+            resource.flow_id = flow.resource_id
+            resource.page_display_name = page
+            resource.page_id = flow.data.get(page, None)
+            resource.resource_type = 'page'
+            message = f'{page}'
+            stats.total_inspected += 1
+            stats.total_issues += 1
+
+            self.generic_logger(resource, rule, message)
+
+        return stats
+
 
     # PAGE RULES
     # missing-webhook-event-handlers
@@ -104,10 +180,18 @@ class RulesDefinitions:
         stats.total_inspected += 1
 
         if page.has_webhook and not page.has_webhook_event_handler:
+            resource = Resource()
+            resource.agent_id = page.agent_id
+            resource.flow_display_name = page.flow.display_name
+            resource.flow_id = page.flow.resource_id
+            resource.page_display_name = page.display_name
+            resource.page_id = page.resource_id
+            resource.resource_type = 'page'
+
             message = ''
 
             stats.total_issues += 1
-            self.generic_logger(page, rule, message)
+            self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -125,8 +209,16 @@ class RulesDefinitions:
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match:
+            resource = Resource()
+            resource.agent_id = route.agent_id
+            resource.flow_display_name = route.page.flow.display_name
+            resource.flow_id = route.page.flow.resource_id
+            resource.page_display_name = route.page.display_name
+            resource.page_id = route.page.resource_id
+            resource.resource_type = 'fulfillment'
+
             stats.total_issues += 1
-            self.generic_logger(route, rule, message)
+            self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -141,8 +233,16 @@ class RulesDefinitions:
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match and 'event' not in route.trigger:
+            resource = Resource()
+            resource.agent_id = route.agent_id
+            resource.flow_display_name = route.page.flow.display_name
+            resource.flow_id = route.page.flow.resource_id
+            resource.page_display_name = route.page.display_name
+            resource.page_id = route.page.resource_id
+            resource.resource_type = 'fulfillment'
+
             stats.total_issues += 1
-            self.generic_logger(route, rule, message)
+            self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -158,8 +258,16 @@ class RulesDefinitions:
         match = re.search(pattern, route.text, flags=re.IGNORECASE)
 
         if match and 'event' in route.trigger:
+            resource = Resource()
+            resource.agent_id = route.agent_id
+            resource.flow_display_name = route.page.flow.display_name
+            resource.flow_id = route.page.flow.resource_id
+            resource.page_display_name = route.page.display_name
+            resource.page_id = route.page.resource_id
+            resource.resource_type = 'fulfillment'
+
             stats.total_issues += 1
-            self.generic_logger(route, rule, message)
+            self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -171,9 +279,15 @@ class RulesDefinitions:
         rule = 'R004: Intent is Missing Training Phrases.'
         message = f'{intent.training_phrases}'
 
+        resource = Resource()
+        resource.agent_id = intent.agent_id
+        resource.intent_display_name = intent.display_name
+        resource.intent_id = intent.resource_id
+        resource.resource_type = 'intent'
+
         stats.total_inspected += 1
         stats.total_issues += 1
-        self.generic_logger(intent, rule, message)
+        self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -185,19 +299,25 @@ class RulesDefinitions:
 
         hid = self.check_if_head_intent(intent)
 
+        resource = Resource()
+        resource.agent_id = intent.agent_id
+        resource.intent_display_name = intent.display_name
+        resource.intent_id = intent.resource_id
+        resource.resource_type = 'intent'
+
         if hid and n_tps < 50:
             rule = 'R005: Head Intent Does Not Have Minimum Training Phrases.'
             message = f'{lang_code} : ({n_tps} / 50)'
 
             stats.total_issues += 1
-            self.generic_logger(intent, rule, message)
+            self.generic_logger(resource, rule, message)
 
         elif n_tps < 20:
             rule = 'R005: Intent Does Not Have Minimum Training Phrases.'
             message =  f'{lang_code} : ({n_tps} / 20)'
 
             stats.total_issues += 1
-            self.generic_logger(intent, rule, message)
+            self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -207,10 +327,16 @@ class RulesDefinitions:
         rule = 'R010: Missing Metadata file for Intent'
         message = ''
 
+        resource = Resource()
+        resource.agent_id = intent.agent_id
+        resource.intent_display_name = intent.display_name
+        resource.intent_id = intent.resource_id
+        resource.resource_type = 'intent'
+
         stats.total_inspected += 1
         stats.total_issues += 1
 
-        self.generic_logger(intent, rule, message)
+        self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -230,8 +356,14 @@ class RulesDefinitions:
             if phrase not in pair['training_phrases']:
                 message = f'[Utterance: {phrase} | Intent: {intent}]'
 
+                resource = Resource()
+                resource.agent_id = tc.agent_id
+                resource.test_case_display_name = tc.display_name
+                resource.test_case_id = tc.resource_id
+                resource.resource_type = 'test_case'
+
                 stats.total_issues += 1
-                self.generic_logger(tc, rule, message)
+                self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -248,8 +380,14 @@ class RulesDefinitions:
                 intent = pair['intent']
                 phrase = pair['user_utterance']
 
+        resource = Resource()
+        resource.agent_id = tc.agent_id
+        resource.test_case_display_name = tc.display_name
+        resource.test_case_id = tc.resource_id
+        resource.resource_type = 'test_case'
+
         message = ''
-        self.generic_logger(tc, rule, message)
+        self.generic_logger(resource, rule, message)
 
         return stats
 
@@ -279,6 +417,13 @@ class RulesDefinitions:
                 stats.total_issues += 1
                 rule = 'R009: Yes/No Entities Present in Agent'
                 message = f'{etype.kind}'
+
+                resource = Resource()
+                resource.agent_id = etype.agent_id
+                resource.entity_type_display_name = etype.display_name
+                resource.entity_type_id = etype.resource_id
+                resource.resource_type = 'entity_type'
+
                 self.generic_logger(etype, rule, message)
 
         return stats
