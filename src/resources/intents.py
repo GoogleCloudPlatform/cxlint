@@ -1,14 +1,11 @@
 import json
-import logging
 import os
 
 from configparser import ConfigParser
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
 
-from common import Common, LintStats
+from common import Common
 from rules import RulesDefinitions
-from resources.types import Intent
+from resources.types import Intent, LintStats
 
 class Intents:
     """Intent linter methods and functions."""

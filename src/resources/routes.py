@@ -1,14 +1,9 @@
-import json
-import logging
-import os
-
 from configparser import ConfigParser
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
+from typing import Dict, Any
 
-from common import Common, LintStats
+from common import Common
 from rules import RulesDefinitions
-from resources.types import Page, Fulfillment
+from resources.types import Page, Fulfillment, LintStats
 
 class Fulfillments:
     """Pages linter methods and functions."""

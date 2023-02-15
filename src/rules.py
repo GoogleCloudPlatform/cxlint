@@ -2,10 +2,9 @@
 
 import re
 
-from dataclasses import dataclass
 from typing import Union, List
 
-from resources.types import Resource
+from resources.types import EntityType, Flow, Fulfillment, Intent, LintStats, Page, Resource, TestCase
 
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
@@ -37,7 +36,7 @@ class RulesDefinitions:
         return link
 
     @staticmethod
-    def check_if_head_intent(intent):
+    def check_if_head_intent(intent: Intent):
         """Checks if Intent is Head Intent based on labels and name."""
         hid = False
 
@@ -67,7 +66,7 @@ class RulesDefinitions:
 
         return issue_found
 
-    def generic_logger(self, resource, rule, message) -> None:
+    def generic_logger(self, resource: Resource, rule: str, message: str) -> None:
         """Generic Logger for various resources."""
         url = self.create_link(resource)
 
@@ -88,7 +87,7 @@ class RulesDefinitions:
 
     # FLOW RULES
     # unused-pages
-    def unused_pages(self, flow, stats) -> object:
+    def unused_pages(self, flow: Flow, stats: LintStats) -> LintStats:
         """Checks for Unusued Pages in Flow Graph."""
         rule = 'R012: Unused Pages'
 
@@ -110,7 +109,7 @@ class RulesDefinitions:
         return stats
     
     # dangling-pages
-    def dangling_pages(self, flow, stats) -> object:
+    def dangling_pages(self, flow: Flow, stats: LintStats) -> LintStats:
         """Checks for Dangling Pages in Flow Graph."""
         rule = 'R013: Dangling Pages'
 
@@ -132,7 +131,7 @@ class RulesDefinitions:
         return stats
     
     # orphaned-pages
-    def orphaned_pages(self, flow, stats) -> object:
+    def orphaned_pages(self, flow: Flow, stats: LintStats) -> LintStats:
         """Checks for Orphaned Pages in Flow Graph."""
         rule = 'R014: Orphaned Pages'
 
@@ -156,7 +155,8 @@ class RulesDefinitions:
 
     # PAGE RULES
     # missing-webhook-event-handlers
-    def missing_webhook_event_handlers(self, page, stats) -> object:
+    def missing_webhook_event_handlers(
+            self, page: Page, stats: LintStats) -> LintStats:
         """Checks for missing Event Handlers on pages that use Webhooks."""
         rule = 'R011: Missing Webhook Event Handlers'
 
@@ -181,7 +181,8 @@ class RulesDefinitions:
 
     # RESPONSE MESSAGE RULES
     # closed-choice-alternative
-    def closed_choice_alternative_parser(self, route, stats) -> object:
+    def closed_choice_alternative_parser(
+            self, route: Fulfillment, stats: LintStats) -> LintStats:
         """Identifies a Closed Choice Alternative Question."""
         rule = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
             '(A? or B.)'
@@ -206,7 +207,7 @@ class RulesDefinitions:
         return stats
 
     # wh-questions
-    def wh_questions(self, route, stats) -> object:
+    def wh_questions(self, route: Fulfillment, stats: LintStats) -> LintStats:
         """Identifies a Wh- Question and checks for appropriate punctuation."""
         rule = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
         message = f'{route.trigger}'
@@ -230,7 +231,8 @@ class RulesDefinitions:
         return stats
 
     # clarifying-questions
-    def clarifying_questions(self, route, stats) -> object:
+    def clarifying_questions(
+            self, route: Fulfillment, stats: LintStats) -> LintStats:
         """Identifies Clarifying Questions that are missing `?` Punctuation."""
         rule = 'R003: Clarifying Question Should Use `?` Punctuation'
         message = f'{route.trigger}'
@@ -257,7 +259,8 @@ class RulesDefinitions:
 
     # INTENT RULES
     # intent-missing-tps
-    def missing_training_phrases(self, intent, stats) -> object:
+    def missing_training_phrases(
+            self, intent: Intent, stats: LintStats) -> LintStats:
         """Checks for Intents that are Missing Training Phrases"""
         rule = 'R004: Intent is Missing Training Phrases.'
         message = f'{intent.training_phrases}'
@@ -275,7 +278,11 @@ class RulesDefinitions:
         return stats
 
     # intent-min-tps
-    def min_tps_head_intent(self, intent, lang_code, stats) -> object:
+    def min_tps_head_intent(
+            self,
+            intent: Intent,
+            lang_code: str,
+            stats: LintStats) -> LintStats:
         """Determines if Intent has min recommended training phrases"""
         n_tps = len(intent.training_phrases[lang_code]['tps'])
         stats.total_inspected += 1
@@ -305,7 +312,8 @@ class RulesDefinitions:
         return stats
 
     # intent-missing-metadata
-    def intent_missing_metadata(self, intent, stats) -> object:
+    def intent_missing_metadata(
+            self, intent: Intent, stats: LintStats) -> LintStats:
         """Flags Intent that has missing metadata file."""
         rule = 'R010: Missing Metadata file for Intent'
         message = ''
@@ -325,7 +333,7 @@ class RulesDefinitions:
 
     # TEST CASE RULES
     # explicit-tps-in-test-cases
-    def explicit_tps_in_tcs(self, tc, stats) -> object:
+    def explicit_tps_in_tcs(self, tc: TestCase, stats: LintStats) -> LintStats:
         """Checks that user utterance is an explicit intent training phrase."""
         rule = 'R007: Explicit Training Phrase Not in Test Case'
         
@@ -351,7 +359,8 @@ class RulesDefinitions:
         return stats
 
     # invalid-intent-in-test-cases
-    def invalid_intent_in_tcs(self, tc, stats) -> object:
+    def invalid_intent_in_tcs(
+            self, tc: TestCase, stats: LintStats) -> LintStats:
         """Check that a listed Intent in the Test Case exists in the agent."""
         rule = 'R008: Invalid Intent in Test Case'
 
@@ -376,7 +385,11 @@ class RulesDefinitions:
 
     # ENTITY TYPE RULES
     # yes-no-entities
-    def yes_no_entities(self, etype, lang_code, stats) -> object:
+    def yes_no_entities(
+            self,
+            etype: EntityType,
+            lang_code: str,
+            stats: LintStats) -> LintStats:
         """Check that yes/no entities are not present in the agent."""
         yes_no = ['yes', 'no']
         issue_found = False

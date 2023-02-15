@@ -2,28 +2,13 @@ import logging
 import re
 
 from configparser import ConfigParser
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List
 
 # logging config
 logging.basicConfig(
     level=logging.INFO,
     format="%(message)s",
 )
-
-@dataclass
-class LintStats:
-    """Used to track linter stats for each section processed."""
-    total_issues: int = 0
-    total_inspected: int = 0
-    total_flows: int = 0
-    total_pages: int = 0
-    total_intents: int = 0
-    total_training_phrases: int = 0
-    total_entity_types: int = 0
-    total_route_groups: int = 0
-    total_test_cases: int = 0
-    total_webhooks: int = 0
 
 class Common:
     @staticmethod

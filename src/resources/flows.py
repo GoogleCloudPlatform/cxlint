@@ -1,16 +1,14 @@
 import json
-import logging
 import os
 
 from configparser import ConfigParser
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
+from typing import List
 
-from common import Common, LintStats
+from common import Common
 from rules import RulesDefinitions
 
 from graph import Graph
-from resources.types import Flow, Page
+from resources.types import Flow, Page, LintStats
 from resources.pages import Pages
 from resources.routes import Fulfillments
 
@@ -330,5 +328,3 @@ class Flows:
             f'{stats.total_inspected} inspected.'\
             f'\nYour Agent Flows rated at {rating:.2f}/10\n\n'
         self.console.log(end_message)
-
-

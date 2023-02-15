@@ -1,14 +1,11 @@
 import json
-import logging
 import os
 
 from configparser import ConfigParser
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
 
-from common import Common, LintStats
+from common import Common
 from rules import RulesDefinitions
-from resources.types import EntityType
+from resources.types import EntityType, LintStats
 
 class EntityTypes:
     """Flow linter methods and functions."""

@@ -7,12 +7,11 @@ import logging
 from rich.console import Console
 from rich.logging import RichHandler
 
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple, Union
+from typing import List, Any, Union
 
 from common import Common
 from gcs_utils import GcsUtils
-from rules import RulesDefinitions # pylint: disable=E0401
+
 from resources.flows import Flows
 from resources.entity_types import EntityTypes
 from resources.intents import Intents

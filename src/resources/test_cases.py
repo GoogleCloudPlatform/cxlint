@@ -1,14 +1,12 @@
 import json
-import logging
 import os
 
 from configparser import ConfigParser
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any
 
-from common import Common, LintStats
+from common import Common
 from rules import RulesDefinitions
-from resources.types import TestCase
+from resources.types import TestCase, LintStats
 
 class TestCases:
     """Test Case linter methods and functions."""

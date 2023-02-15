@@ -124,3 +124,17 @@ class Resource:
     test_case_id: str = None
     webhook_display_name: str = None
     webhook_id: str = None
+
+@dataclass
+class LintStats:
+    """Used to track linter stats for each section processed."""
+    total_issues: int = 0
+    total_inspected: int = 0
+    total_flows: int = 0
+    total_pages: int = 0
+    total_intents: int = 0
+    total_training_phrases: int = 0
+    total_entity_types: int = 0
+    total_route_groups: int = 0
+    total_test_cases: int = 0
+    total_webhooks: int = 0
