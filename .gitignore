@@ -1,6 +1,7 @@
 # Specific Files
 data/
 *.zip
+logs.txt
 
 *.py[cod]
 *.sw[op]
