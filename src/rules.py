@@ -120,7 +120,8 @@ class RulesDefinitions:
             resource.page_display_name = page
             resource.page_id = flow.data.get(page, None)
             resource.resource_type = 'page'
-            message = f'{page}'
+
+            message = ''
             stats.total_inspected += 1
             stats.total_issues += 1
 
@@ -141,7 +142,8 @@ class RulesDefinitions:
             resource.page_display_name = page
             resource.page_id = flow.data.get(page, None)
             resource.resource_type = 'page'
-            message = f'{page}'
+
+            message = ''
             stats.total_inspected += 1
             stats.total_issues += 1
 
@@ -162,7 +164,8 @@ class RulesDefinitions:
             resource.page_display_name = page
             resource.page_id = flow.data.get(page, None)
             resource.resource_type = 'page'
-            message = f'{page}'
+
+            message = ''
             stats.total_inspected += 1
             stats.total_issues += 1
 
