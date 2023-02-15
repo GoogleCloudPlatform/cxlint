@@ -46,13 +46,18 @@ class RulesDefinitions:
         return hid
 
     @staticmethod
-    def entity_regex_matching(data: Union[List[str],str], pattern: str):
+    def entity_regex_matching(data: Union[List[str],str]):
         """Checks Entities and synonyms for issues based on regex pattern."""
         issue_found = False
+        pattern = r'^(?:yes|no)$'
 
+        # Checks the individual Entity key
         if isinstance(data, str):
             data_match = re.search(pattern, data, flags=re.IGNORECASE)
+            if data_match:
+                issue_found = True
 
+        # Checks the list of synonyms if available
         elif isinstance(data, List):
             n = len(data)
             i = 0
@@ -81,7 +86,7 @@ class RulesDefinitions:
         }
 
         final_link = link_map.get(resource.resource_type, None)
-        output = f'{rule} : {final_link} : {message}'
+        output = f'{rule} : {final_link} {message}'
 
         self.console.log(output)
 
@@ -186,7 +191,7 @@ class RulesDefinitions:
         """Identifies a Closed Choice Alternative Question."""
         rule = 'R001: Closed-Choice Alternative Missing Intermediate `?` '\
             '(A? or B.)'
-        message = f'{route.trigger}'
+        message = f': {route.trigger}'
 
         pattern = r'^(What|Where|When|Who|Why|How|Would) (.*) or (.*)\?$'
 
@@ -210,7 +215,7 @@ class RulesDefinitions:
     def wh_questions(self, route: Fulfillment, stats: LintStats) -> LintStats:
         """Identifies a Wh- Question and checks for appropriate punctuation."""
         rule = 'R002: Wh- Question Should Use `.` Instead of `?` Punctuation'
-        message = f'{route.trigger}'
+        message = f': {route.trigger}'
 
         pattern = r'^(what|when|where|who|why|how)\b.*\?$'
 
@@ -235,7 +240,7 @@ class RulesDefinitions:
             self, route: Fulfillment, stats: LintStats) -> LintStats:
         """Identifies Clarifying Questions that are missing `?` Punctuation."""
         rule = 'R003: Clarifying Question Should Use `?` Punctuation'
-        message = f'{route.trigger}'
+        message = f': {route.trigger}'
 
         # updated pattern
         pattern = r'^(what|when|where|who|why|how)\b.*\.$'
@@ -263,7 +268,7 @@ class RulesDefinitions:
             self, intent: Intent, stats: LintStats) -> LintStats:
         """Checks for Intents that are Missing Training Phrases"""
         rule = 'R004: Intent is Missing Training Phrases.'
-        message = f'{intent.training_phrases}'
+        message = f': {intent.training_phrases}'
 
         resource = Resource()
         resource.agent_id = intent.agent_id
@@ -297,14 +302,14 @@ class RulesDefinitions:
 
         if hid and n_tps < 50:
             rule = 'R005: Head Intent Does Not Have Minimum Training Phrases.'
-            message = f'{lang_code} : ({n_tps} / 50)'
+            message = f': {lang_code} : ({n_tps} / 50)'
 
             stats.total_issues += 1
             self.generic_logger(resource, rule, message)
 
         elif n_tps < 20:
             rule = 'R005: Intent Does Not Have Minimum Training Phrases.'
-            message =  f'{lang_code} : ({n_tps} / 20)'
+            message =  f': {lang_code} : ({n_tps} / 20)'
 
             stats.total_issues += 1
             self.generic_logger(resource, rule, message)
@@ -345,7 +350,7 @@ class RulesDefinitions:
             tps = pair['training_phrases']
 
             if phrase not in pair['training_phrases']:
-                message = f'[Utterance: {phrase} | Intent: {intent}]'
+                message = f': [Utterance: {phrase} | Intent: {intent}]'
 
                 resource = Resource()
                 resource.agent_id = tc.agent_id
@@ -384,42 +389,71 @@ class RulesDefinitions:
         return stats
 
     # ENTITY TYPE RULES
+    def _yes_no_entity_check(
+            self,
+            etype: EntityType,
+            entity: str,
+            lang_code: str,
+            stats: LintStats):
+        """Check the Entity inside the Entity Type for yes/no phrases."""
+        stats.total_inspected += 1
+
+        issue_found = self.entity_regex_matching(entity)
+
+        if issue_found:
+            stats.total_issues += 1
+            rule = 'R009: Yes/No Entities Present in Agent'
+            message = f': {lang_code} : Entity : {entity}'
+
+            resource = Resource()
+            resource.agent_id = etype.agent_id
+            resource.entity_type_display_name = etype.display_name
+            resource.entity_type_id = etype.resource_id
+            resource.resource_type = 'entity_type'
+
+            self.generic_logger(resource, rule, message) 
+
+        return stats
+    
+    def _yes_no_synonym_check(
+            self,
+            etype: EntityType,
+            synonyms: List[str],
+            lang_code: str,
+            stats: LintStats):
+        """Check the Synonyms of the Entity for yes/no phrases."""
+        stats.total_inspected += 1
+
+        issue_found = self.entity_regex_matching(synonyms)
+
+        if issue_found:
+            stats.total_issues += 1
+            rule = 'R009: Yes/No Entities Present in Agent'
+            message = f': {lang_code} : Synonyms : {synonyms}'
+
+            resource = Resource()
+            resource.agent_id = etype.agent_id
+            resource.entity_type_display_name = etype.display_name
+            resource.entity_type_id = etype.resource_id
+            resource.resource_type = 'entity_type'
+
+            self.generic_logger(resource, rule, message) 
+
+        return stats
+
     # yes-no-entities
     def yes_no_entities(
             self,
             etype: EntityType,
             lang_code: str,
             stats: LintStats) -> LintStats:
-        """Check that yes/no entities are not present in the agent."""
-        yes_no = ['yes', 'no']
-        issue_found = False
-        stats.total_inspected += 1
-
+        """Check that yes/no Entities or Synonyms aren't used in the agent."""
         for entity in etype.entities[lang_code]['entities']:
             value = entity['value']
             synonyms = entity['synonyms']
 
-            pattern = r'^(?:yes|no)$'
-
-            issue_found = self.entity_regex_matching(value, pattern)
-
-            value_match = re.search(pattern, value, flags=re.IGNORECASE)
-            if value_match:
-                issue_found = True
-
-            issue_found = self.entity_regex_matching(synonyms, pattern)
-
-            if issue_found:
-                stats.total_issues += 1
-                rule = 'R009: Yes/No Entities Present in Agent'
-                message = f'{etype.kind}'
-
-                resource = Resource()
-                resource.agent_id = etype.agent_id
-                resource.entity_type_display_name = etype.display_name
-                resource.entity_type_id = etype.resource_id
-                resource.resource_type = 'entity_type'
-
-                self.generic_logger(resource, rule, message)
+            stats = self._yes_no_entity_check(etype, value, lang_code, stats)
+            stats = self._yes_no_synonym_check(
+                etype, synonyms, lang_code, stats)
 
         return stats
