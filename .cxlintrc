@@ -35,6 +35,8 @@ type=voice
 [FLOWS]
 include=
 
+exclude=
+
 # Linting of intents can be filtered by providing a string pattern to match
 # against the Intent Display Names. You can choose `include` or `exclude` patterns.
 [INTENTS]
@@ -54,9 +56,12 @@ disable=
 #    clarifying-questions,
 #    intent-missing-tps,
 #    intent-min-tps,
-#    explicit-tps-in-test-cases
-#    invalid-intent-in-test-cases
-#    missing-webhook-event-handlers
+#    explicit-tps-in-test-cases,
+#    invalid-intent-in-test-cases,
+#    missing-webhook-event-handlers,
+#    unused-pages,
+#    dangling-pages,
+#    orphaned-pages
 
 
 # For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.
