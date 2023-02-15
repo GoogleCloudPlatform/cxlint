@@ -8,22 +8,7 @@ from typing import Dict, List, Any, Tuple
 
 from common import Common, LintStats
 from rules import RulesDefinitions
-
-@dataclass
-class Intent:
-    """Used to track current Intent Attributes."""
-    agent_id: str = None
-    data: Dict[str, Any] = None
-    description: str = None
-    display_name: str = None
-    dir_path: str = None
-    filtered: bool = False
-    labels: Dict[str, str] = None
-    metadata_file: str = None
-    resource_id: str = None
-    resource_type: str = 'intent'
-    training_phrases: Dict[str, Any] = field(default_factory=dict)
-    verbose: bool = False
+from resources.types import Intent
 
 class Intents:
     """Intent linter methods and functions."""

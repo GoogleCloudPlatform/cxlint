@@ -8,19 +8,7 @@ from typing import Dict, List, Any, Tuple
 
 from common import Common, LintStats
 from rules import RulesDefinitions
-
-@dataclass
-class EntityType:
-    """"Used to track current Flow Attributes."""
-    agent_id: str = None
-    data: Dict[str, Any] = None
-    dir_path: str = None # Full Directory Path for this Entity Type
-    display_name: str = None # Entity Type Display Name
-    entities: Dict[str, Any] = field(default_factory=dict) # Map of lang codes, entities, and values
-    kind: str = None # The kind of Entity Type represented
-    resource_id: str = None
-    resource_type: str = 'entity_type'
-    verbose: bool = False
+from resources.types import EntityType
 
 class EntityTypes:
     """Flow linter methods and functions."""

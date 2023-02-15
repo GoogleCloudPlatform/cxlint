@@ -8,24 +8,7 @@ from typing import Dict, List, Any, Tuple
 
 from common import Common, LintStats
 from rules import RulesDefinitions
-
-@dataclass
-class TestCase:
-    """Used to track current Test Case Attributes."""
-    associated_intent_data: Dict[str, Any] = None
-    agent_id: str = None
-    agent_path: str = None
-    conversation_turns: List[Any] = None
-    data: Dict[str, Any] = None
-    display_name: str = None
-    has_invalid_intent: bool = False
-    intent_data: List[str] = None
-    qualified: bool = False
-    resource_id: str = None
-    resource_type: str = 'test_case'
-    tags: List[str] = None
-    test_config: Dict[str, Any] = None
-    verbose: bool = False
+from resources.types import TestCase
 
 class TestCases:
     """Test Case linter methods and functions."""
