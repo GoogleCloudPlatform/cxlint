@@ -51,6 +51,8 @@ class CxLint:
         agent_type: str = None,
         intent_include_pattern: str = None,
         intent_exclude_pattern: str = None,
+        flow_include_list: List[str] = None,
+        flow_exclude_list: List[str] = None,
         load_gcs: bool = False,
         output_file: str = None,
         resource_filter: Union[List[str], str] = None,
@@ -82,6 +84,12 @@ class CxLint:
 
         if intent_include_pattern:
             self.update_config('INTENTS', intent_include_pattern)
+
+        if flow_include_list or flow_exclude_list:
+            self.update_flows_config(
+                flow_include_list,
+                flow_exclude_list
+            )
 
         if resource_filter:
             self.update_config('AGENT RESOURCES', resource_filter)
@@ -118,6 +126,16 @@ class CxLint:
                     'List[`str`]')
 
         return res
+    
+    def update_flows_config(self, include_pattern: str, exclude_pattern: str):
+        """Handle updates to the Flow include/exclude lists."""
+        if include_pattern:
+            data = self.transform_list_to_str(include_pattern)
+            config.set('FLOWS', 'include', data)
+
+        if exclude_pattern:
+            data = self.transform_list_to_str(exclude_pattern)
+            config.set('FLOWS', 'exclude', data)
 
     def update_intent_config(self, include_pattern: str, exclude_pattern: str):
         """Handle updates to the Intent include/exclude lists."""
