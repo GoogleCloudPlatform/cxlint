@@ -20,6 +20,7 @@ class EntityTypes:
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions(self.console)
+        self.lang_code_filter = Common.load_lang_code_filter(config)
 
     @staticmethod
     def build_entity_type_path_list(agent_local_path: str):
@@ -73,17 +74,18 @@ class EntityTypes:
         """Executes all Entity based linter rules."""
 
         for lang_code in etype.entities:
-            ent_file = etype.entities[lang_code]['file_path']
+            if lang_code in self.lang_code_filter:
+                ent_file = etype.entities[lang_code]['file_path']
 
-            with open(ent_file, 'r', encoding='UTF-8') as entities:
-                data = json.load(entities)
-                etype.entities[lang_code]['entities'] = data['entities']
+                with open(ent_file, 'r', encoding='UTF-8') as entities:
+                    data = json.load(entities)
+                    etype.entities[lang_code]['entities'] = data['entities']
 
-                # yes-no-entities
-                if self.disable_map.get('yes-no-entities', True):
-                    stats = self.rules.yes_no_entities(etype, lang_code, stats)
+                    # yes-no-entities
+                    if self.disable_map.get('yes-no-entities', True):
+                        stats = self.rules.yes_no_entities(etype, lang_code, stats)
 
-                entities.close()
+                    entities.close()
 
         return stats
 

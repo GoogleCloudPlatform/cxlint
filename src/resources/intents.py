@@ -17,6 +17,7 @@ class Intents:
         self.rules = RulesDefinitions(self.console)
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
+        self.lang_code_filter = Common.load_lang_code_filter(config)
 
     @staticmethod
     def load_include_filter(config: ConfigParser) -> str:
@@ -119,18 +120,19 @@ class Intents:
         """Executes all Training Phrase based linter rules."""
 
         for lang_code in intent.training_phrases:
-            tp_file = intent.training_phrases[lang_code]['file_path']
+            if lang_code in self.lang_code_filter:
+                tp_file = intent.training_phrases[lang_code]['file_path']
 
-            with open(tp_file, 'r', encoding='UTF-8') as tps:
-                data = json.load(tps)
-                intent.training_phrases[lang_code]['tps'] = data['trainingPhrases']
+                with open(tp_file, 'r', encoding='UTF-8') as tps:
+                    data = json.load(tps)
+                    intent.training_phrases[lang_code]['tps'] = data['trainingPhrases']
 
-                # intent-min-tps
-                if self.disable_map.get('intent-min-tps', True):
-                    stats = self.rules.min_tps_head_intent(
-                        intent, lang_code, stats)
+                    # intent-min-tps
+                    if self.disable_map.get('intent-min-tps', True):
+                        stats = self.rules.min_tps_head_intent(
+                            intent, lang_code, stats)
 
-                tps.close()
+                    tps.close()
 
         return stats
 

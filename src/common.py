@@ -111,3 +111,11 @@ class Common:
                 display_name = display_name.replace(pattern, patterns[pattern])
 
         return display_name
+    
+    @staticmethod
+    def load_lang_code_filter(config: ConfigParser) -> str:
+        """Loads the language code filter for Intent Training Phrases."""
+        lang_codes = config['INTENTS']['language_code']
+        lang_code_list = lang_codes.split(',')
+
+        return lang_code_list

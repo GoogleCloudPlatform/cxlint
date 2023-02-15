@@ -44,6 +44,8 @@ include=
 
 exclude=
 
+language_code=
+
 # Disable the message, report, category or checker with the given id(s).
 # The disable key expects a comma separated list of symbolic names for
 # linter rules to disable them.

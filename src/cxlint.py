@@ -52,6 +52,7 @@ class CxLint:
         intent_exclude_pattern: str = None,
         flow_include_list: List[str] = None,
         flow_exclude_list: List[str] = None,
+        language_code: Union[List[str], str] = None,
         load_gcs: bool = False,
         output_file: str = None,
         resource_filter: Union[List[str], str] = None,
@@ -81,9 +82,6 @@ class CxLint:
                 intent_exclude_pattern
             )
 
-        if intent_include_pattern:
-            self.update_config('INTENTS', intent_include_pattern)
-
         if flow_include_list or flow_exclude_list:
             self.update_flows_config(
                 flow_include_list,
@@ -92,6 +90,9 @@ class CxLint:
 
         if resource_filter:
             self.update_config('AGENT RESOURCES', resource_filter)
+
+        if language_code:
+            self.update_config('INTENTS', language_code)
 
         self.resource_filter = Common.load_resource_filter(config)
         self.output_file = output_file
@@ -158,7 +159,8 @@ class CxLint:
             config.set(section, 'type', data)
 
         if section == 'INTENTS':
-            config.set(section, 'pattern', data)
+            data = self.transform_list_to_str(data)
+            config.set(section, 'language_code', data)
 
         if section == 'TEST CASE TAGS':
             data = self.transform_list_to_str(data)
