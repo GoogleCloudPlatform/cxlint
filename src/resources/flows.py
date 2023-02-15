@@ -20,6 +20,7 @@ class Flow:
     dangling_pages: set = field(default_factory=set)
     dir_path: str = None # Full Directory Path for this Flow
     display_name: str = None # Flow Display Name
+    filtered: bool = False
     graph: Graph = None
     orphaned_pages: set = field(default_factory=set)
     resource_id: str = None
@@ -74,11 +75,30 @@ class Flows:
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
         self.rules = RulesDefinitions(self.console)
+        self.include_filter = self.load_include_filter(config)
+        self.exclude_filter = self.load_exclude_filter(config)
         self.route_parameters = {}
         self.special_pages = [
             'End Session', 'End Flow', 'Start Page', 'Current Page',
             'Previous Page'
         ]
+
+    @staticmethod
+    def load_include_filter(config: ConfigParser) -> str:
+        """Loads the include pattern for Flow display names."""
+        pattern = config['FLOWS']['include']
+
+        return pattern
+
+    @staticmethod
+    def load_exclude_filter(config: ConfigParser) -> str:
+        """Loads the exclude pattern for Flow display names."""
+        pattern = config['FLOWS']['exclude']
+
+        if pattern == '':
+            pattern = None
+
+        return pattern
 
     @staticmethod
     def build_flow_path_list(agent_local_path: str):
@@ -282,7 +302,21 @@ class Flows:
         flow.dangling_pages = filtered_set
 
         return flow
+    
+    def check_flow_filters(self, flow: Flow):
+        """Determines if the Flow should be filtered for linting."""
+        if self.include_filter:
+            if flow.display_name in self.include_filter:
+                flow.filtered = False
 
+            else:
+                flow.filtered = True
+
+        if self.exclude_filter:
+            if flow.display_name in self.exclude_filter:
+                flow.filtered = True
+
+        return flow
 
     def set_route_targets(self, route: Fulfillment):
         """Determine the Route Targets for the specified route.
@@ -603,23 +637,24 @@ class Flows:
 
     def lint_flow(self, flow: Flow, stats: LintStats):
         """Lint a Single Flow dir and all subdirectories."""
-        
         flow.display_name = Common.parse_filepath(flow.dir_path, 'flow')
+        flow = self.check_flow_filters(flow)
 
-        message = f'{"*" * 15} Flow: {flow.display_name}'
-        self.console.log(message)
+        if not flow.filtered:
+            message = f'{"*" * 15} Flow: {flow.display_name}'
+            self.console.log(message)
 
-        flow.start_page_file = f'{flow.dir_path}/{flow.display_name}.json'
+            flow.start_page_file = f'{flow.dir_path}/{flow.display_name}.json'
 
-        stats = self.lint_start_page(flow, stats)
-        stats = self.lint_pages_directory(flow, stats)
+            stats = self.lint_start_page(flow, stats)
+            stats = self.lint_pages_directory(flow, stats)
 
-        # Order of Find Operations is important here!
-        flow = self.find_unused_pages(flow)
-        flow = self.find_dangling_pages(flow)
-        flow = self.find_orphaned_pages(flow)
+            # Order of Find Operations is important here!
+            flow = self.find_unused_pages(flow)
+            flow = self.find_dangling_pages(flow)
+            flow = self.find_orphaned_pages(flow)
 
-        stats = self.lint_graph(flow, stats)
+            stats = self.lint_graph(flow, stats)
 
         return stats
 
