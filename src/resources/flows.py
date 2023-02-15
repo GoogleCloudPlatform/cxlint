@@ -76,7 +76,25 @@ class Flows:
         return flow_paths
     
     @staticmethod
-    def find_orphaned_pages(flow: Flow):
+    def remove_flow_pages_from_set(input_set: set) -> set:
+        """Remove any transitions tagged with FLOW.
+        
+        Some route transitions go to Flow instead of Page. For these
+        transitions, we tag them with `FLOW` for easier identification later.
+        However, when reporting on Graph inconsistencies like Dangling or
+        Orphaned pages, we want to remove these from any result sets as they
+        are not relevant.
+        """
+        filtered_set = set()
+
+        for page in input_set:
+            if 'FLOW' not in page:
+                filtered_set.add(page)
+
+        return filtered_set
+
+    
+    def find_orphaned_pages(self, flow: Flow):
         """Find Orphaned Pages in the graph.
         
         An Orphaned Page is defined as:
@@ -97,6 +115,7 @@ class Flows:
         orphaned, because they are reachable via other sections of the graph.
         """
         filtered_set = flow.active_pages.symmetric_difference(flow.graph._used_nodes)
+        filtered_set = self.remove_flow_pages_from_set(filtered_set)
         flow.orphaned_pages.update(filtered_set)
 
         return flow
@@ -187,13 +206,7 @@ class Flows:
         for page in self.special_pages:
             flow.dangling_pages.discard(page)
 
-        filtered_set = set()
-        # Clean up any Flow Transitions
-        for page in flow.dangling_pages:
-            if 'FLOW' not in page:
-                filtered_set.add(page)
-
-        flow.dangling_pages = filtered_set
+        flow.dangling_pages = self.remove_flow_pages_from_set(flow.dangling_pages)
 
         return flow
     
@@ -267,14 +280,15 @@ class Flows:
 
     def lint_flow(self, flow: Flow, stats: LintStats):
         """Lint a Single Flow dir and all subdirectories."""
-        flow.display_name = Common.parse_filepath(flow.dir_path, 'flow')
+        flow.file_name = Common.parse_filepath(flow.dir_path, 'flow')
+        flow.display_name = Common.clean_display_name(flow.file_name)
         flow = self.check_flow_filters(flow)
 
         if not flow.filtered:
             message = f'{"*" * 15} Flow: {flow.display_name}'
             self.console.log(message)
 
-            flow.start_page_file = f'{flow.dir_path}/{flow.display_name}.json'
+            flow.start_page_file = f'{flow.dir_path}/{flow.file_name}.json'
 
             stats = self.lint_start_page(flow, stats)
             stats = self.pages.lint_pages_directory(flow, stats)

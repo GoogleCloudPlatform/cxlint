@@ -41,23 +41,6 @@ class Pages:
 
         return page_paths
     
-    @staticmethod
-    def clean_page_display_name(display_name: str):
-        """Replace characters from map for the given page name."""
-        patterns = {
-            "%28": "(",
-            "%29": ")",
-            "%23": "#",
-            "%2f": "/",
-            "%3f": "?"
-            }
-
-        for pattern in patterns:
-            if pattern in display_name:
-                display_name = display_name.replace(pattern, patterns[pattern])
-
-        return display_name
-    
     def lint_webhooks(self, page: Page, stats: LintStats):
         """Lint a Page with Webhook setup best practice rules."""
 
@@ -70,7 +53,7 @@ class Pages:
     def lint_page(self, page: Page, stats: LintStats):
         """Lint a Single Page file."""
         page.display_name = Common.parse_filepath(page.page_file, 'page')
-        page.display_name = self.clean_page_display_name(page.display_name)
+        page.display_name = Common.clean_display_name(page.display_name)
 
         page.flow.graph.add_node(page.display_name)
 

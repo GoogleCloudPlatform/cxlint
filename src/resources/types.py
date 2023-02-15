@@ -13,7 +13,8 @@ class Flow:
     data: Dict[str, Any] = field(default_factory=dict)
     dangling_pages: set = field(default_factory=set)
     dir_path: str = None # Full Directory Path for this Flow
-    display_name: str = None # Flow Display Name
+    display_name: str = None # Cleaned Flow Display Name (removed special chars)
+    file_name: str = None # Original File Name of the Flow file (includes special chars)
     filtered: bool = False
     graph: Graph = None
     orphaned_pages: set = field(default_factory=set)

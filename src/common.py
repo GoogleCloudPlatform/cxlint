@@ -84,3 +84,22 @@ class Common:
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
 
         return resource_name
+    
+    @staticmethod
+    def clean_display_name(display_name: str):
+        """Replace cspecial haracters from map for the given display name."""
+        patterns = {
+            "%28": "(",
+            "%29": ")",
+            "%23": "#",
+            "%2f": "/",
+            "%3f": "?",
+            "%3a": ":",
+            "%2c": ","
+            }
+
+        for pattern in patterns:
+            if pattern in display_name:
+                display_name = display_name.replace(pattern, patterns[pattern])
+
+        return display_name
