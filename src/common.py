@@ -102,6 +102,8 @@ class Common:
             "%3d": "=",
             "%3e": ">",
             "%3f": "?",
+            "%e2%80%9c": '“',
+            "%e2%80%9d": '”',
             }
 
         for pattern in patterns:
