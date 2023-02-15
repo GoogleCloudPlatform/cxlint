@@ -5,29 +5,7 @@ import re
 from dataclasses import dataclass
 from typing import Union, List
 
-@dataclass
-class Resource:
-    """Generic class to store basic Resource data.
-    
-    Since each core class has such varied parameters, this generic class will
-    help to standardize the data fed to the generic logger and the maps used
-    therein.
-    """
-    agent_id: str = None
-    entity_type_display_name: str = None
-    entity_type_id: str = None
-    flow_display_name: str = None
-    flow_id: str = None
-    intent_display_name: str = None
-    intent_id: str = None
-    page_display_name: str = None
-    page_id: str = None
-    resource_type: str = None
-    test_case_display_name: str = None
-    test_case_id: str = None
-    webhook_display_name: str = None
-    webhook_id: str = None
-
+from resources.types import Resource
 
 class RulesDefinitions:
     """All rule definitions used by CX Lint."""
@@ -94,6 +72,7 @@ class RulesDefinitions:
         url = self.create_link(resource)
 
         link_map = {
+            'entity_type': f'[link={url}]{resource.entity_type_display_name}[/link]',
             'flow': f'[link={url}]{resource.flow_display_name}[/link]',
             'fulfillment': f'[link={url}]{resource.flow_display_name} : {resource.page_display_name}[/link]',
             'intent': f'[link={url}]{resource.intent_display_name}[/link]',
@@ -102,7 +81,8 @@ class RulesDefinitions:
             'webhook': f'[link={url}]{resource.webhook_display_name}[/link]',
         }
 
-        output = f'{rule} : {link_map[resource.resource_type]} : {message}'
+        final_link = link_map.get(resource.resource_type, None)
+        output = f'{rule} : {final_link} : {message}'
 
         self.console.log(output)
 
@@ -427,6 +407,6 @@ class RulesDefinitions:
                 resource.entity_type_id = etype.resource_id
                 resource.resource_type = 'entity_type'
 
-                self.generic_logger(etype, rule, message)
+                self.generic_logger(resource, rule, message)
 
         return stats
