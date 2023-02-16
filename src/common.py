@@ -2,7 +2,8 @@ import logging
 import re
 
 from configparser import ConfigParser
-from typing import Dict, List
+from typing import Dict, List, Union
+from resources.types import Intent, EntityType
 
 # logging config
 logging.basicConfig(
@@ -122,4 +123,34 @@ class Common:
         lang_codes = config['INTENTS']['language_code']
         lang_code_list = lang_codes.split(',')
 
+        if len(lang_code_list) == 1 and lang_code_list[0] == '':
+            lang_code_list = None
+
         return lang_code_list
+
+    @staticmethod
+    def get_file_based_on_lang_code_filter(
+        resource: Union[Intent, EntityType],
+        lang_code,
+        lang_code_filter) -> Union[Intent, EntityType]:
+        """Gets the file if it qualifies for lang_code filter."""
+        # TODO pmarlow: Refactor for better readability
+
+        if lang_code_filter:
+            if lang_code in lang_code_filter:
+                if isinstance(resource, Intent):
+                    filename = resource.training_phrases[lang_code]['file_path']
+
+                if isinstance(resource, EntityType):
+                    filename = resource.entities[lang_code]['file_path']
+            else:
+                filename = None
+
+        else:
+            if isinstance(resource, Intent):
+                filename = resource.training_phrases[lang_code]['file_path']
+
+            if isinstance(resource, EntityType):
+                filename = resource.entities[lang_code]['file_path']
+
+        return filename

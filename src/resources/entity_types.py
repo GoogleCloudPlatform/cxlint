@@ -74,18 +74,21 @@ class EntityTypes:
         """Executes all Entity based linter rules."""
 
         for lang_code in etype.entities:
-            if lang_code in self.lang_code_filter:
-                ent_file = etype.entities[lang_code]['file_path']
+            ent_file_path = Common.get_file_based_on_lang_code_filter(
+                etype, lang_code, self.lang_code_filter
+            )
 
-                with open(ent_file, 'r', encoding='UTF-8') as entities:
-                    data = json.load(entities)
-                    etype.entities[lang_code]['entities'] = data['entities']
+            if ent_file_path:
+                with open(ent_file_path, 'r', encoding='UTF-8') as ent_file:
+                    data = json.load(ent_file)
+                    entities = data.get('entities', None)
+                    etype.entities[lang_code]['entities'] = entities
 
                     # yes-no-entities
                     if self.disable_map.get('yes-no-entities', True):
                         stats = self.rules.yes_no_entities(etype, lang_code, stats)
 
-                    entities.close()
+                    ent_file.close()
 
         return stats
 

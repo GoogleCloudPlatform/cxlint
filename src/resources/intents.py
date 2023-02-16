@@ -80,6 +80,19 @@ class Intents:
             intent_paths.append(intent_dir_path)
 
         return intent_paths
+    
+    def apply_intent_rules(
+        self,
+        intent: Intent,
+        lang_code: str,
+        stats: LintStats) -> LintStats:
+        """Apply each rule to the specified intent."""
+
+        # intent-min-tps
+        if self.disable_map.get('intent-min-tps', True):
+            stats = self.rules.min_tps_head_intent(intent, lang_code, stats)
+
+        return stats
 
     def check_intent_filters(self, intent: Intent) -> Intent:
         """Determines if the Intent should be filtered for linting."""
@@ -120,17 +133,17 @@ class Intents:
         """Executes all Training Phrase based linter rules."""
 
         for lang_code in intent.training_phrases:
-            if lang_code in self.lang_code_filter:
-                tp_file = intent.training_phrases[lang_code]['file_path']
-
+            tp_file = Common.get_file_based_on_lang_code_filter(
+                intent, lang_code, self.lang_code_filter
+                )
+            
+            if tp_file:
                 with open(tp_file, 'r', encoding='UTF-8') as tps:
                     data = json.load(tps)
-                    intent.training_phrases[lang_code]['tps'] = data['trainingPhrases']
+                    phrases = data.get('trainingPhrases', None)
+                    intent.training_phrases[lang_code]['tps'] = phrases
 
-                    # intent-min-tps
-                    if self.disable_map.get('intent-min-tps', True):
-                        stats = self.rules.min_tps_head_intent(
-                            intent, lang_code, stats)
+                    stats = self.apply_intent_rules(intent, lang_code, stats)
 
                     tps.close()
 
