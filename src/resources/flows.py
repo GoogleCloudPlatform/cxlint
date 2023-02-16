@@ -8,9 +8,10 @@ from common import Common
 from rules import RulesDefinitions
 
 from graph import Graph
-from resources.types import Flow, Page, LintStats
+from resources.types import Flow, Page, LintStats, RouteGroup
 from resources.pages import Pages
 from resources.routes import Fulfillments
+from resources.route_groups import RouteGroups
 
 class Flows:
     """Flow linter methods and functions."""
@@ -34,6 +35,7 @@ class Flows:
         ]
 
         self.pages = Pages(verbose, config, console)
+        self.rgs = RouteGroups(verbose, config, console)
         self.routes = Fulfillments(verbose, config, console)
 
     @staticmethod
@@ -237,9 +239,10 @@ class Flows:
             flow.graph.add_node(page.display_name)
 
             page.data = json.load(flow_file)
+            page.verbose = self.verbose
             page.events = page.data.get('eventHandlers', None)
             page.routes = page.data.get('transitionRoutes', None)
-            page.verbose = self.verbose
+            page.route_groups = page.data.get('transitionRouteGroups', None)
 
             flow.resource_id = page.data.get('name', None)
             page.agent_id = flow.agent_id
@@ -250,6 +253,9 @@ class Flows:
             stats = self.routes.lint_routes(page, stats)
             stats = self.routes.lint_events(page, stats)
             stats = self.pages.lint_webhooks(page, stats)
+
+            if page.route_groups:
+                page = self.routes.set_route_group_targets(page)
 
             flow_file.close()
 
@@ -292,6 +298,7 @@ class Flows:
 
             stats = self.lint_start_page(flow, stats)
             stats = self.pages.lint_pages_directory(flow, stats)
+            stats = self.rgs.lint_route_groups_directory(flow, stats)
 
             # Order of Find Operations is important here!
             flow = self.find_unused_pages(flow)

@@ -81,6 +81,16 @@ class Fulfillments:
 
         return trigger
     
+    def set_route_group_targets(self, page: Page):
+        """Determine Route Targets for Route Group routes."""
+        current_page = page.display_name
+
+        for route_group in page.route_groups:
+            page.flow.graph.add_edge(current_page, route_group)
+            page.flow.graph.add_used_node(route_group)
+
+        return page
+    
     def set_route_targets(self, route: Fulfillment):
         """Determine the Route Targets for the specified route.
         

@@ -69,6 +69,7 @@ class Pages:
             page.entry = page.data.get('entryFulfillment', None)
             page.events = page.data.get('eventHandlers', None)
             page.routes = page.data.get('transitionRoutes', None)
+            page.route_groups = page.data.get('transitionRouteGroups', None)
 
             page.resource_id = page.data.get('name', None)
             page.flow.data[page.display_name] = page.resource_id
@@ -79,6 +80,8 @@ class Pages:
             stats = self.routes.lint_events(page, stats)
             stats = self.lint_webhooks(page, stats)
 
+            if page.route_groups:
+                page = self.routes.set_route_group_targets(page)
 
             page_file.close()
 

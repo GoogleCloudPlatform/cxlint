@@ -79,7 +79,8 @@ class Common:
             'flow': r'.*\/flows\/([^\/]*)',
             'page': r'.*\/pages\/([^\/]*)\.',
             'entity_type': r'.*\/entityTypes\/([^\/]*)',
-            'intent': r'.*\/intents\/([^\/]*)'
+            'intent': r'.*\/intents\/([^\/]*)',
+            'route_group': r'.*\/transitionRouteGroups\/([^\/]*)'
         }
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
 
@@ -91,6 +92,7 @@ class Common:
         patterns = {
             "%22": '"',
             "%23": "#",
+            "%24": "$",
             "%26": "&",
             "%27": "'",
             "%28": "(",
@@ -102,6 +104,8 @@ class Common:
             "%3d": "=",
             "%3e": ">",
             "%3f": "?",
+            "%5b": "[",
+            "%5d": "]",
             "%e2%80%9c": '“',
             "%e2%80%9d": '”',
             }

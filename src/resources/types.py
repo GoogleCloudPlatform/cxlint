@@ -39,6 +39,20 @@ class Page:
     resource_id: str = None
     resource_type: str = 'page'
     routes: List[object] = None
+    route_groups: List[str] = None
+    verbose: bool = False
+
+@dataclass
+class RouteGroup:
+    """Used to track current RouteGroup Attributes."""
+    agent_id: str = None
+    data: Dict[str, Any] = None
+    display_name: str = None
+    flow: Flow = None
+    resource_id: str = None
+    resource_type: str = 'route_group'
+    rg_file: str = None
+    routes: List[object] = None
     verbose: bool = False
 
 @dataclass
