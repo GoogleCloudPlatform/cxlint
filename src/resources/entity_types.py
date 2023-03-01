@@ -23,13 +23,11 @@ from common import Common
 from rules import RulesDefinitions
 from resources.types import EntityType, LintStats
 
+
 class EntityTypes:
     """Entity Type linter methods and functions."""
-    def __init__(
-        self,
-        verbose: bool,
-        config: ConfigParser,
-        console):
+
+    def __init__(self, verbose: bool, config: ConfigParser, console):
         self.verbose = verbose
         self.console = console
         self.config = config
@@ -49,12 +47,12 @@ class EntityTypes:
         - <entity_type_name>.json, for the Entity Type object
         - /entities, for the Entities dir
         """
-        root_dir = agent_local_path + '/entityTypes'
+        root_dir = agent_local_path + "/entityTypes"
 
         entity_type_paths = []
 
         for entity_type_dir in os.listdir(root_dir):
-            entity_type_dir_path = f'{root_dir}/{entity_type_dir}'
+            entity_type_dir_path = f"{root_dir}/{entity_type_dir}"
             entity_type_paths.append(entity_type_dir_path)
 
         return entity_type_paths
@@ -67,22 +65,22 @@ class EntityTypes:
         inside of the Entity Type dataclass. This dict is accessed later to
         lint each file and provide reporting based on each language code.
         """
-        root_dir = etype.dir_path + '/entities'
+        root_dir = etype.dir_path + "/entities"
 
         for lang_file in os.listdir(root_dir):
-            lang_code = lang_file.split('.')[0]
-            lang_code_path = f'{root_dir}/{lang_file}'
-            etype.entities[lang_code] = {'file_path': lang_code_path}
+            lang_code = lang_file.split(".")[0]
+            lang_code_path = f"{root_dir}/{lang_file}"
+            etype.entities[lang_code] = {"file_path": lang_code_path}
 
     @staticmethod
     def gather_entity_type_metadata(etype: EntityType):
         """Extract metadata for Entity Type for later processing."""
-        metadata_file = etype.dir_path + f'/{etype.display_name}.json'
+        metadata_file = etype.dir_path + f"/{etype.display_name}.json"
 
-        with open(metadata_file, 'r', encoding='UTF-8') as etype_file:
+        with open(metadata_file, "r", encoding="UTF-8") as etype_file:
             etype.data = json.load(etype_file)
-            etype.resource_id = etype.data.get('name', None)
-            etype.kind = etype.data.get('kind', None)
+            etype.resource_id = etype.data.get("name", None)
+            etype.kind = etype.data.get("kind", None)
 
             etype_file.close()
 
@@ -95,14 +93,16 @@ class EntityTypes:
             )
 
             if ent_file_path:
-                with open(ent_file_path, 'r', encoding='UTF-8') as ent_file:
+                with open(ent_file_path, "r", encoding="UTF-8") as ent_file:
                     data = json.load(ent_file)
-                    entities = data.get('entities', None)
-                    etype.entities[lang_code]['entities'] = entities
+                    entities = data.get("entities", None)
+                    etype.entities[lang_code]["entities"] = entities
 
                     # yes-no-entities
-                    if self.disable_map.get('yes-no-entities', True):
-                        stats = self.rules.yes_no_entities(etype, lang_code, stats)
+                    if self.disable_map.get("yes-no-entities", True):
+                        stats = self.rules.yes_no_entities(
+                            etype, lang_code, stats
+                        )
 
                     ent_file.close()
 
@@ -110,7 +110,7 @@ class EntityTypes:
 
     def lint_entities(self, etype: EntityType, stats: LintStats):
         """Lint the Entity files inside of an Entity Type."""
-        if 'entities' in os.listdir(etype.dir_path):
+        if "entities" in os.listdir(etype.dir_path):
             self.build_lang_code_paths(etype)
             stats = self.lint_language_codes(etype, stats)
 
@@ -120,12 +120,12 @@ class EntityTypes:
 
         return stats
 
-
     def lint_entity_type(self, etype: EntityType, stats: LintStats):
         """Lint a Single Entity Type dir and all subdirectories."""
-        
+
         etype.display_name = Common.parse_filepath(
-            etype.dir_path, 'entity_type')
+            etype.dir_path, "entity_type"
+        )
 
         self.gather_entity_type_metadata(etype)
 
@@ -133,7 +133,6 @@ class EntityTypes:
         # stats = self.lint_pages_directory(flow, stats)
 
         return stats
-
 
     def lint_entity_types_directory(self, agent_local_path: str):
         """Linting the Entity Types dir in the JSON Package structure."""
@@ -156,10 +155,13 @@ class EntityTypes:
 
         header = "-" * 20
         rating = Common.calculate_rating(
-            stats.total_issues, stats.total_inspected)
+            stats.total_issues, stats.total_inspected
+        )
 
-        end_message = f'\n{header}\n{stats.total_entity_types} Entity Types '\
-            f'linted. \n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} inspected.'\
-            f'\nYour Agent Entity Types rated at {rating:.2f}/10\n\n'
+        end_message = (
+            f"\n{header}\n{stats.total_entity_types} Entity Types "
+            f"linted. \n{stats.total_issues} issues found out of "
+            f"{stats.total_inspected} inspected."
+            f"\nYour Agent Entity Types rated at {rating:.2f}/10\n\n"
+        )
         self.console.log(end_message)

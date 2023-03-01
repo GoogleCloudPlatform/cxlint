@@ -24,13 +24,11 @@ from rules import RulesDefinitions
 from resources.types import Flow, Page, LintStats
 from resources.routes import Fulfillments
 
+
 class Pages:
     """Pages linter methods and functions."""
-    def __init__(
-            self,
-            verbose: bool,
-            config: ConfigParser,
-            console):
+
+    def __init__(self, verbose: bool, config: ConfigParser, console):
         self.verbose = verbose
         self.console = console
         self.config = config
@@ -47,28 +45,28 @@ class Pages:
 
         Ex: /path/to/agent/flows/<flow_dir>/pages/<page_name>.json
         """
-        pages_path = f'{flow_path}/pages'
+        pages_path = f"{flow_path}/pages"
 
         page_paths = []
 
         for page in os.listdir(pages_path):
-            page_file_path = f'{pages_path}/{page}'
+            page_file_path = f"{pages_path}/{page}"
             page_paths.append(page_file_path)
 
         return page_paths
-    
+
     def lint_webhooks(self, page: Page, stats: LintStats):
         """Lint a Page with Webhook setup best practice rules."""
 
         # missing-webhook-event-handlers
-        if self.disable_map.get('missing-webhook-event-handlers', True):
+        if self.disable_map.get("missing-webhook-event-handlers", True):
             stats = self.rules.missing_webhook_event_handlers(page, stats)
 
         return stats
-    
+
     def lint_page(self, page: Page, stats: LintStats):
         """Lint a Single Page file."""
-        page.display_name = Common.parse_filepath(page.page_file, 'page')
+        page.display_name = Common.parse_filepath(page.page_file, "page")
         page.display_name = Common.clean_display_name(page.display_name)
 
         page.flow.graph.add_node(page.display_name)
@@ -79,15 +77,15 @@ class Pages:
         # Need to implement a parser for symbol translation.
         page.flow.all_pages.add(page.display_name)
 
-        with open(page.page_file, 'r', encoding='UTF-8') as page_file:
+        with open(page.page_file, "r", encoding="UTF-8") as page_file:
             page.data = json.load(page_file)
             page.verbose = self.verbose
-            page.entry = page.data.get('entryFulfillment', None)
-            page.events = page.data.get('eventHandlers', None)
-            page.routes = page.data.get('transitionRoutes', None)
-            page.route_groups = page.data.get('transitionRouteGroups', None)
+            page.entry = page.data.get("entryFulfillment", None)
+            page.events = page.data.get("eventHandlers", None)
+            page.routes = page.data.get("transitionRoutes", None)
+            page.route_groups = page.data.get("transitionRouteGroups", None)
 
-            page.resource_id = page.data.get('name', None)
+            page.resource_id = page.data.get("name", None)
             page.flow.data[page.display_name] = page.resource_id
 
             # Order of linting is important here
@@ -105,11 +103,11 @@ class Pages:
 
     def lint_pages_directory(self, flow: Flow, stats: LintStats):
         """Linting the Pages dir inside a specific Flow dir.
-        
+
         Some Flows may not contain Pages, so we check for the existence
         of the directory before traversing
         """
-        if 'pages' in os.listdir(flow.dir_path):
+        if "pages" in os.listdir(flow.dir_path):
             page_paths = self.build_page_path_list(flow.dir_path)
 
             for page_path in page_paths:

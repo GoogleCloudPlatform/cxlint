@@ -27,40 +27,44 @@ logging.basicConfig(
     format="%(message)s",
 )
 
+
 class Common:
     """Common methods and helper functions used throughout library."""
-    @staticmethod
-    def load_message_controls(config: ConfigParser) -> Dict[str,str]:
-        """Loads the config file for message control into a map."""
-        msg_list = config['MESSAGES CONTROL']['disable'].replace(
-            '\n', '').split(',')
 
-        msg_dict = {msg:False for msg in msg_list}
+    @staticmethod
+    def load_message_controls(config: ConfigParser) -> Dict[str, str]:
+        """Loads the config file for message control into a map."""
+        msg_list = (
+            config["MESSAGES CONTROL"]["disable"].replace("\n", "").split(",")
+        )
+
+        msg_dict = {msg: False for msg in msg_list}
 
         return msg_dict
 
     @staticmethod
-    def load_agent_type(config: ConfigParser) -> Dict[str,str]:
+    def load_agent_type(config: ConfigParser) -> Dict[str, str]:
         """Loads the config file for agent type."""
-        agent_type = config['AGENT TYPE']['type']
+        agent_type = config["AGENT TYPE"]["type"]
 
         return agent_type
 
     @staticmethod
     def load_resource_filter(config: ConfigParser) -> List[str]:
         """Loads the config file for agent resource filtering."""
-        resource_filter = config['AGENT RESOURCES']['include'].replace(
-            '\n', '').split(',')
+        resource_filter = (
+            config["AGENT RESOURCES"]["include"].replace("\n", "").split(",")
+        )
 
         resource_dict = {
-            'entity_types': True,
-            'flows': True,
-            'intents': True,
-            'test_cases': True,
-            'webhooks': True
-            }
+            "entity_types": True,
+            "flows": True,
+            "intents": True,
+            "test_cases": True,
+            "webhooks": True,
+        }
 
-        if len(resource_filter) == 1 and resource_filter[0] == '':
+        if len(resource_filter) == 1 and resource_filter[0] == "":
             resource_filter = None
 
         if resource_filter:
@@ -70,19 +74,18 @@ class Common:
 
         return resource_dict
 
-
     @staticmethod
     def load_agent_id(config: ConfigParser) -> str:
         """Loads the Agent ID from the config file if provided."""
-        agent_id = config['AGENT ID']['id']
-        
+        agent_id = config["AGENT ID"]["id"]
+
         return agent_id
 
     @staticmethod
     def calculate_rating(total_issues: int, total_inspected: int) -> float:
         """Calculate the final rating for the linter stats."""
         if total_inspected > 0:
-            rating = (1-(total_issues/total_inspected))*10
+            rating = (1 - (total_issues / total_inspected)) * 10
 
         else:
             rating = 10
@@ -94,16 +97,16 @@ class Common:
         """Parse file path to provide quick reference for linter log."""
 
         regex_map = {
-            'flow': r'.*\/flows\/([^\/]*)',
-            'page': r'.*\/pages\/([^\/]*)\.',
-            'entity_type': r'.*\/entityTypes\/([^\/]*)',
-            'intent': r'.*\/intents\/([^\/]*)',
-            'route_group': r'.*\/transitionRouteGroups\/([^\/]*)'
+            "flow": r".*\/flows\/([^\/]*)",
+            "page": r".*\/pages\/([^\/]*)\.",
+            "entity_type": r".*\/entityTypes\/([^\/]*)",
+            "intent": r".*\/intents\/([^\/]*)",
+            "route_group": r".*\/transitionRouteGroups\/([^\/]*)",
         }
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
 
         return resource_name
-    
+
     @staticmethod
     def clean_display_name(display_name: str):
         """Replace cspecial haracters from map for the given display name."""
@@ -124,50 +127,49 @@ class Common:
             "%3f": "?",
             "%5b": "[",
             "%5d": "]",
-            "%e2%80%9c": '“',
-            "%e2%80%9d": '”',
-            }
+            "%e2%80%9c": "“",
+            "%e2%80%9d": "”",
+        }
 
         for pattern in patterns:
             if pattern in display_name:
                 display_name = display_name.replace(pattern, patterns[pattern])
 
         return display_name
-    
+
     @staticmethod
     def load_lang_code_filter(config: ConfigParser) -> str:
         """Loads the language code filter for Intent Training Phrases."""
-        lang_codes = config['INTENTS']['language_code']
-        lang_code_list = lang_codes.split(',')
+        lang_codes = config["INTENTS"]["language_code"]
+        lang_code_list = lang_codes.split(",")
 
-        if len(lang_code_list) == 1 and lang_code_list[0] == '':
+        if len(lang_code_list) == 1 and lang_code_list[0] == "":
             lang_code_list = None
 
         return lang_code_list
 
     @staticmethod
     def get_file_based_on_lang_code_filter(
-        resource: Union[Intent, EntityType],
-        lang_code,
-        lang_code_filter) -> Union[Intent, EntityType]:
+        resource: Union[Intent, EntityType], lang_code, lang_code_filter
+    ) -> Union[Intent, EntityType]:
         """Gets the file if it qualifies for lang_code filter."""
         # TODO pmarlow: Refactor for better readability
 
         if lang_code_filter:
             if lang_code in lang_code_filter:
                 if isinstance(resource, Intent):
-                    filename = resource.training_phrases[lang_code]['file_path']
+                    filename = resource.training_phrases[lang_code]["file_path"]
 
                 if isinstance(resource, EntityType):
-                    filename = resource.entities[lang_code]['file_path']
+                    filename = resource.entities[lang_code]["file_path"]
             else:
                 filename = None
 
         else:
             if isinstance(resource, Intent):
-                filename = resource.training_phrases[lang_code]['file_path']
+                filename = resource.training_phrases[lang_code]["file_path"]
 
             if isinstance(resource, EntityType):
-                filename = resource.entities[lang_code]['file_path']
+                filename = resource.entities[lang_code]["file_path"]
 
         return filename

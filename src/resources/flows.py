@@ -29,13 +29,11 @@ from resources.pages import Pages
 from resources.routes import Fulfillments
 from resources.route_groups import RouteGroups
 
+
 class Flows:
     """Flow linter methods and functions."""
-    def __init__(
-        self,
-        verbose: bool,
-        config: ConfigParser,
-        console):
+
+    def __init__(self, verbose: bool, config: ConfigParser, console):
         self.verbose = verbose
         self.console = console
         self.config = config
@@ -46,8 +44,11 @@ class Flows:
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
         self.special_pages = [
-            'End Session', 'End Flow', 'Start Page', 'Current Page',
-            'Previous Page'
+            "End Session",
+            "End Flow",
+            "Start Page",
+            "Current Page",
+            "Previous Page",
         ]
 
         self.pages = Pages(verbose, config, console)
@@ -57,16 +58,16 @@ class Flows:
     @staticmethod
     def load_include_filter(config: ConfigParser) -> str:
         """Loads the include pattern for Flow display names."""
-        pattern = config['FLOWS']['include']
+        pattern = config["FLOWS"]["include"]
 
         return pattern
 
     @staticmethod
     def load_exclude_filter(config: ConfigParser) -> str:
         """Loads the exclude pattern for Flow display names."""
-        pattern = config['FLOWS']['exclude']
+        pattern = config["FLOWS"]["exclude"]
 
-        if pattern == '':
+        if pattern == "":
             pattern = None
 
         return pattern
@@ -83,20 +84,20 @@ class Flows:
         - /transitionRouteGroups, for the Route Groups dir
         - /pages, for the Pages dir
         """
-        root_dir = agent_local_path + '/flows'
+        root_dir = agent_local_path + "/flows"
 
         flow_paths = []
 
         for flow_dir in os.listdir(root_dir):
-            flow_dir_path = f'{root_dir}/{flow_dir}'
+            flow_dir_path = f"{root_dir}/{flow_dir}"
             flow_paths.append(flow_dir_path)
 
         return flow_paths
-    
+
     @staticmethod
     def remove_flow_pages_from_set(input_set: set) -> set:
         """Remove any transitions tagged with FLOW.
-        
+
         Some route transitions go to Flow instead of Page. For these
         transitions, we tag them with `FLOW` for easier identification later.
         However, when reporting on Graph inconsistencies like Dangling or
@@ -106,15 +107,14 @@ class Flows:
         filtered_set = set()
 
         for page in input_set:
-            if 'FLOW' not in page:
+            if "FLOW" not in page:
                 filtered_set.add(page)
 
         return filtered_set
 
-    
     def find_unreachable_pages(self, flow: Flow):
         """Find Unreachable Pages in the graph.
-        
+
         An Unreachable Page is defined as:
           - A Page which has no incoming edge when traversed from Start Page.
             That is, it is unreachable in the graph by any practical means.
@@ -132,7 +132,9 @@ class Flows:
         the graph. For these instances, we don't want to count those pages as
         unreachable, because they are reachable via other sections of the graph.
         """
-        filtered_set = flow.active_pages.symmetric_difference(flow.graph._used_nodes)
+        filtered_set = flow.active_pages.symmetric_difference(
+            flow.graph._used_nodes
+        )
         filtered_set = self.remove_flow_pages_from_set(filtered_set)
         flow.unreachable_pages.update(filtered_set)
 
@@ -140,7 +142,7 @@ class Flows:
 
     def find_unused_pages(self, flow: Flow):
         """Find Unused Pages in the graph.
-        
+
         An Unused Page is defined as:
           - A Page which has no incoming or outgoing edge AND
           - A Page which exists in the Agent design time, but which is not
@@ -177,13 +179,10 @@ class Flows:
         flow.unused_pages = filtered_set
 
         return flow
-    
+
     def recurse_edges(
-            self,
-            edges: List,
-            page: Page,
-            dangling: set,
-            visited: set):
+        self, edges: List, page: Page, dangling: set, visited: set
+    ):
         """Recursive method searching graph edges for Active / Dangling Pages.
 
         A byproduct of searching for Dangling Pages in the graph is that we can
@@ -196,38 +195,41 @@ class Flows:
                 if inner_page not in visited:
                     visited.add(inner_page)
                     dangling, visited = self.recurse_edges(
-                        edges, inner_page, dangling, visited)
-                    
+                        edges, inner_page, dangling, visited
+                    )
+
         else:
             dangling.add(page)
 
         return dangling, visited
-    
+
     def find_dangling_pages(self, flow: Flow):
         """Find Dangling Pages in the graph.
-        
+
         A Dangling Page is defined as:
           - Any page that exists in the graph that has no outgoing edge
-          
+
         These pages can result in a conversational "dead end" which is
         potentially unrecoverable.
         """
 
         flow.dangling_pages, flow.active_pages = self.recurse_edges(
             flow.graph._edges,
-            'Start Page',
+            "Start Page",
             flow.dangling_pages,
-            flow.active_pages
+            flow.active_pages,
         )
 
-        # Clean up Special Pages       
+        # Clean up Special Pages
         for page in self.special_pages:
             flow.dangling_pages.discard(page)
 
-        flow.dangling_pages = self.remove_flow_pages_from_set(flow.dangling_pages)
+        flow.dangling_pages = self.remove_flow_pages_from_set(
+            flow.dangling_pages
+        )
 
         return flow
-    
+
     def check_flow_filters(self, flow: Flow):
         """Determines if the Flow should be filtered for linting."""
         if self.include_filter:
@@ -243,26 +245,23 @@ class Flows:
 
         return flow
 
-    def lint_start_page(
-        self,
-        flow: Flow,
-        stats: LintStats):
+    def lint_start_page(self, flow: Flow, stats: LintStats):
         """Process a single Flow Path file."""
-        with open(flow.start_page_file, 'r', encoding='UTF-8') as flow_file:
+        with open(flow.start_page_file, "r", encoding="UTF-8") as flow_file:
             page = Page(flow=flow)
-            page.display_name = 'Start Page'
+            page.display_name = "Start Page"
 
             flow.graph.add_node(page.display_name)
 
             page.data = json.load(flow_file)
             page.verbose = self.verbose
-            page.events = page.data.get('eventHandlers', None)
-            page.routes = page.data.get('transitionRoutes', None)
-            page.route_groups = page.data.get('transitionRouteGroups', None)
+            page.events = page.data.get("eventHandlers", None)
+            page.routes = page.data.get("transitionRoutes", None)
+            page.route_groups = page.data.get("transitionRouteGroups", None)
 
-            flow.resource_id = page.data.get('name', None)
+            flow.resource_id = page.data.get("name", None)
             page.agent_id = flow.agent_id
-            page.resource_id = 'START_PAGE'
+            page.resource_id = "START_PAGE"
             flow.data[page.display_name] = page.resource_id
 
             # Order of linting is important
@@ -276,33 +275,32 @@ class Flows:
             flow_file.close()
 
         return stats
-    
-    def lint_graph(self, flow:Flow, stats: LintStats):
+
+    def lint_graph(self, flow: Flow, stats: LintStats):
         """Lint the graph structure for the specified Flow.
-        
+
         In this method we are taking the completed Flow Graph that was built
         for this specific Flow and checking for any design inconsistencies.
         These include things like Unused, Dangling, and Unreachable pages.
         """
 
         # unused-pages
-        if self.disable_map.get('unused-pages', True):
+        if self.disable_map.get("unused-pages", True):
             stats = self.rules.unused_pages(flow, stats)
 
         # dangling-pages
-        if self.disable_map.get('dangling-pages', True):
+        if self.disable_map.get("dangling-pages", True):
             stats = self.rules.dangling_pages(flow, stats)
 
         # unreachable-pages
-        if self.disable_map.get('unreachable-pages', True):
+        if self.disable_map.get("unreachable-pages", True):
             stats = self.rules.unreachable_pages(flow, stats)
 
         return stats
 
-
     def lint_flow(self, flow: Flow, stats: LintStats):
         """Lint a Single Flow dir and all subdirectories."""
-        flow.file_name = Common.parse_filepath(flow.dir_path, 'flow')
+        flow.file_name = Common.parse_filepath(flow.dir_path, "flow")
         flow.display_name = Common.clean_display_name(flow.file_name)
         flow = self.check_flow_filters(flow)
 
@@ -310,7 +308,7 @@ class Flows:
             message = f'{"*" * 15} Flow: {flow.display_name}'
             self.console.log(message)
 
-            flow.start_page_file = f'{flow.dir_path}/{flow.file_name}.json'
+            flow.start_page_file = f"{flow.dir_path}/{flow.file_name}.json"
 
             stats = self.lint_start_page(flow, stats)
             stats = self.pages.lint_pages_directory(flow, stats)
@@ -358,10 +356,13 @@ class Flows:
 
         header = "-" * 20
         rating = Common.calculate_rating(
-            stats.total_issues, stats.total_inspected)
+            stats.total_issues, stats.total_inspected
+        )
 
-        end_message = f'\n{header}\n{stats.total_flows} Flows linted.'\
-            f'\n{stats.total_issues} issues found out of '\
-            f'{stats.total_inspected} inspected.'\
-            f'\nYour Agent Flows rated at {rating:.2f}/10\n\n'
+        end_message = (
+            f"\n{header}\n{stats.total_flows} Flows linted."
+            f"\n{stats.total_issues} issues found out of "
+            f"{stats.total_inspected} inspected."
+            f"\nYour Agent Flows rated at {rating:.2f}/10\n\n"
+        )
         self.console.log(end_message)

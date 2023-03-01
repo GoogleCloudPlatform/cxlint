@@ -16,8 +16,10 @@
 
 import collections
 
+
 class Graph(collections.UserList):
     """Utility class for manaing graph structure."""
+
     def __init__(self):
         self._nodes = set()
         self._edges = collections.defaultdict(list)
