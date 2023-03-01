@@ -22,8 +22,7 @@ from configparser import ConfigParser
 from common import Common
 from rules import RulesDefinitions
 
-from graph import Graph
-from resources.types import RouteGroup, Flow, Page, LintStats
+from resources.types import RouteGroup, Flow, LintStats
 from resources.routes import Fulfillments
 
 

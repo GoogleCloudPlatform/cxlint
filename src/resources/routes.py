@@ -265,7 +265,6 @@ class Fulfillments:
         there is no need to loop through multiple routes, as they don't
         exist for Entry Fulfillment.
         """
-        tf_key = "triggerFulfillment"
 
         if not page.entry:
             return stats

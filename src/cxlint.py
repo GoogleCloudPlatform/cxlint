@@ -63,9 +63,9 @@ logging.basicConfig(
 config = configparser.ConfigParser()
 config.sections()
 
-config.read_file(
-    open(os.path.join(os.path.dirname(__file__), "..", ".cxlintrc"))
-)
+config_filepath = os.path.join(os.path.dirname(__file__), "..", ".cxlintrc")
+with open(config_filepath, encoding="UTF-8") as config_filepath_infile:
+    config.read_file(config_filepath_infile)
 
 
 class CxLint:
@@ -146,7 +146,7 @@ class CxLint:
             res = ",".join(data)
 
         if not isinstance(res, str):
-            raise (
+            raise TypeError(
                 "Input must be one of the following formats: `str` | "
                 "List[`str`]"
             )

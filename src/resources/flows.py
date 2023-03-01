@@ -24,7 +24,7 @@ from common import Common
 from rules import RulesDefinitions
 
 from graph import Graph
-from resources.types import Flow, Page, LintStats, RouteGroup
+from resources.types import Flow, Page, LintStats
 from resources.pages import Pages
 from resources.routes import Fulfillments
 from resources.route_groups import RouteGroups
@@ -118,22 +118,24 @@ class Flows:
         An Unreachable Page is defined as:
           - A Page which has no incoming edge when traversed from Start Page.
             That is, it is unreachable in the graph by any practical means.
-          - A Page which is connected to a root unreachable page. That is, a page
-            that could have both incoming or outgoing routes, but due to its
-            connectedness to the root orphan page, is unreachable in the graph.
+          - A Page which is connected to a root unreachable page. That is, a
+            page that could have both incoming or outgoing routes, but due to
+            its connectedness to the root orphan page, is unreachable in the
+            graph.
 
         Here we will compute the symmetric difference of 2 sets:
           - Active Pages (i.e. Pages that were reachable in the graph)
           - Used Pages (i.e. Pages that were used by some Route)
 
-        If an Unreachable Page has children that it routes to, those children will
-        appear in Used Pages, although they will ultimately be unreachable.
-        It's possible for an Unreachable Page to route back to an Active Page in
-        the graph. For these instances, we don't want to count those pages as
-        unreachable, because they are reachable via other sections of the graph.
+        If an Unreachable Page has children that it routes to, those children
+        will appear in Used Pages, although they will ultimately be
+        unreachable. It's possible for an Unreachable Page to route back to an
+        Active Page in the graph. For these instances, we don't want to count
+        those pages as unreachable, because they are reachable via other
+        sections of the graph.
         """
         filtered_set = flow.active_pages.symmetric_difference(
-            flow.graph._used_nodes
+            flow.graph.used_nodes
         )
         filtered_set = self.remove_flow_pages_from_set(filtered_set)
         flow.unreachable_pages.update(filtered_set)
@@ -156,22 +158,22 @@ class Flows:
           - Truly Unused Pages
           - Unreachable Root Pages
 
-        Unreachable Root Pages end up in the results due to the fact that no other
-        Active Page is pointing to them. We remove these from the resulting set
-        before presenting the Truly Unused Pages.
+        Unreachable Root Pages end up in the results due to the fact that no
+        other Active Page is pointing to them. We remove these from the
+        resulting set before presenting the Truly Unused Pages.
         """
 
         # Discard special pages as they are non-relevant for final outcome
         for page in self.special_pages:
             flow.all_pages.discard(page)
 
-        prelim_unused = flow.all_pages.difference(flow.graph._used_nodes)
+        prelim_unused = flow.all_pages.difference(flow.graph.used_nodes)
 
         # Filter out Unreachable Root Pages
         filtered_set = set()
 
         for page in prelim_unused:
-            if page not in flow.graph._edges:
+            if page not in flow.graph.edges:
                 filtered_set.add(page)
             else:
                 flow.unreachable_pages.add(page)
@@ -214,7 +216,7 @@ class Flows:
         """
 
         flow.dangling_pages, flow.active_pages = self.recurse_edges(
-            flow.graph._edges,
+            flow.graph.edges,
             "Start Page",
             flow.dangling_pages,
             flow.active_pages,

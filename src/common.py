@@ -131,9 +131,9 @@ class Common:
             "%e2%80%9d": "”",
         }
 
-        for pattern in patterns:
-            if pattern in display_name:
-                display_name = display_name.replace(pattern, patterns[pattern])
+        for key, value in patterns.items():
+            if key in display_name:
+                display_name = display_name.replace(key, value)
 
         return display_name
 

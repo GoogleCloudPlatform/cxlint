@@ -150,10 +150,6 @@ class TestCases:
 
         return cleaned_tps
 
-    def check_invalid_intent_test_case(self, tc: TestCase):
-        """Check to see if the Test Case contains an invalid intent."""
-        return None
-
     def gather_intent_tps(self, tc: TestCase):
         # TODO Refactor
         """Collect all TPs associated with Intent data in Test Case."""
@@ -167,7 +163,7 @@ class TestCases:
                     training_phrases_path = intent_dir + "/trainingPhrases"
 
                     for lang_file in os.listdir(training_phrases_path):
-                        lang_code = lang_file.split(".")[0]
+                        # lang_code = lang_file.split(".")[0]
                         lang_code_path = f"{training_phrases_path}/{lang_file}"
 
                         with open(
@@ -179,14 +175,14 @@ class TestCases:
                             tp_file.close()
 
                         # TODO pmarlow: refactor to use tc.intent_data instead
-                        # Need to create another level inside the Intent Dict that contains
-                        # the language files as well.
+                        # Need to create another level inside the Intent Dict
+                        # that contains the language files as well.
                         tc.intent_data[i]["training_phrases"].extend(
                             cleaned_tps
                         )
                         tc.associated_intent_data[pair["intent"]] = cleaned_tps
 
-            except Exception as err:
+            except FileNotFoundError:
                 tc.intent_data[i]["status"] = "invalid_intent"
                 tc.has_invalid_intent = True
                 continue
@@ -259,7 +255,8 @@ class TestCases:
         test_case_paths = self.build_test_case_path_list(agent_local_path)
         # stats.total_test_cases = len(test_case_paths)
 
-        # self.intent_map_for_tcs = self.get_test_case_intent_data(agent_local_path)
+        # self.intent_map_for_tcs = self.get_test_case_intent_data(
+        # agent_local_path)
 
         # Linting Starts Here
         for test_case in test_case_paths:

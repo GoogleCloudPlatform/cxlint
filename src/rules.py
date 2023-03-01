@@ -101,12 +101,16 @@ class RulesDefinitions:
         url = self.create_link(resource)
 
         link_map = {
-            "entity_type": f"[link={url}]{resource.entity_type_display_name}[/link]",
+            "entity_type": f"[link={url}]"\
+                f"{resource.entity_type_display_name}[/link]",
             "flow": f"[link={url}]{resource.flow_display_name}[/link]",
-            "fulfillment": f"[link={url}]{resource.flow_display_name} : {resource.page_display_name}[/link]",
+            "fulfillment": f"[link={url}]{resource.flow_display_name} : "\
+                f"{resource.page_display_name}[/link]",
             "intent": f"[link={url}]{resource.intent_display_name}[/link]",
-            "page": f"[link={url}]{resource.flow_display_name} : {resource.page_display_name}[/link]",
-            "test_case": f"[link={url}]{resource.test_case_display_name}[/link]",
+            "page": f"[link={url}]{resource.flow_display_name} : "\
+                f"{resource.page_display_name}[/link]",
+            "test_case": f"[link={url}]"\
+                f"{resource.test_case_display_name}[/link]",
             "webhook": f"[link={url}]{resource.webhook_display_name}[/link]",
         }
 
@@ -374,7 +378,6 @@ class RulesDefinitions:
 
             intent = pair["intent"]
             phrase = pair["user_utterance"]
-            tps = pair["training_phrases"]
 
             if phrase not in pair["training_phrases"]:
                 message = f": [Utterance: {phrase} | Intent: {intent}]"
@@ -401,9 +404,6 @@ class RulesDefinitions:
             if pair["status"] == "invalid_intent":
                 stats.total_inspected += 1
                 stats.total_issues += 1
-
-                intent = pair["intent"]
-                phrase = pair["user_utterance"]
 
         resource = Resource()
         resource.agent_id = tc.agent_id

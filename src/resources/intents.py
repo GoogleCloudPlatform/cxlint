@@ -140,7 +140,7 @@ class Intents:
 
                 meta_file.close()
 
-        except FileNotFoundError as err:
+        except FileNotFoundError:
             stats = self.rules.intent_missing_metadata(intent, stats)
 
         return stats
