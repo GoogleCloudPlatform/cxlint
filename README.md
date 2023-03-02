@@ -11,7 +11,7 @@
 
 
 # Introduction
-Similar to [code linting](https://en.wikipedia.org/wiki/Lint_(software)), Dialogflow CX Agents can benefit from an automated linter to catch various common design defects when developing Agents. |br|
+Similar to [code linting](https://en.wikipedia.org/wiki/Lint_(software)), Dialogflow CX Agents can benefit from an automated linter to catch various common design defects when developing Agents.  
 The primary goal is to minimize common defects shipped to production by proactively catching and fixing them.
 
 # Quick Start
