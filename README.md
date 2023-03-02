@@ -60,7 +60,7 @@ After running the above, Colab will pick up your credentials from the environmen
 
 # Examples
 
-Code samples and snippets live in the `examples/` folder.
+Code samples and snippets live in the [examples/](examples) folder.
 
 # Supported Python Versions
 Python >= 3.8
