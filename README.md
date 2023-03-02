@@ -1,18 +1,13 @@
-
-<!-- Title and Tags -->
-<div align="center">
-<h1 align="center">Dialogflow CX Linter</h3>
+# Dialogflow CX Linter
 <a href="https://github.com/googleapis/google-cloud-python/blob/main/README.rst#stability-levels" alt="preview">
 <img src="https://img.shields.io/badge/support-preview-gold" /></a>
 <a href="https://pypi.org/project/cxlint/" alt="preview">
 <img src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue" /></a>
-</div>
 
-
-
-# Introduction
+\
 Similar to [code linting](https://en.wikipedia.org/wiki/Lint_(software)), Dialogflow CX Agents can benefit from an automated linter to catch various common design defects when developing Agents.  
-The primary goal is to minimize common defects shipped to production by proactively catching and fixing them.
+The primary goal is to minimize common defects shipped to production by proactively catching and fixing them.  
+
 
 # Quick Start
 
