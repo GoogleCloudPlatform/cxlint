@@ -208,11 +208,18 @@ class Flows:
     def find_dangling_pages(self, flow: Flow):
         """Find Dangling Pages in the graph.
 
-        A Dangling Page is defined as:
+        Dangling Page is defined as:
           - Any page that exists in the graph that has no outgoing edge
+        Active Page is defined as:
+          - Any page that is reachable via an active route in the graph and can
+            be traced back to the Start Page.
 
         These pages can result in a conversational "dead end" which is
         potentially unrecoverable.
+        A byproduct of searching for the dangling pages is locating all of the
+        "active" pages. These are the pages that are "visited" as we traverse
+        the graph. We'll also return Active Pages in this method since they
+        will be used for downstream tasks.
         """
 
         flow.dangling_pages, flow.active_pages = self.recurse_edges(
