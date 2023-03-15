@@ -18,10 +18,11 @@ import json
 import os
 
 from configparser import ConfigParser
+from typing import Dict, Any
 
 from common import Common
 from rules import RulesDefinitions
-from resources.types import Flow, Page, LintStats
+from resources.types import Flow, Page, LintStats, FormParameter, Fulfillment
 from resources.routes import Fulfillments
 
 
@@ -54,6 +55,28 @@ class Pages:
             page_paths.append(page_file_path)
 
         return page_paths
+    
+    @staticmethod
+    def get_form_parameter_data(param: Dict[str, Any], page: Page):
+        fp = FormParameter(page=page)
+        fp.display_name = param.get("displayName", None)
+        fp.entity_type = param.get("entityType", None)
+        fp.required = param.get("required", None)
+
+        fp.fill_behavior = param.get("fillBehavior", None)
+
+        if fp.fill_behavior:
+            fp.init_fulfillment = fp.fill_behavior.get(
+                "initialPromptFulfillment", None)
+            fp.reprompt_handlers = fp.fill_behavior.get(
+                "repromptEventHandlers", None)
+
+        fp.advanced_settings = page.form.get("advancedSettings", None)
+
+        if fp.advanced_settings:
+            fp.dtmf_settings = fp.advanced_settings.get("dtmfSettings", None)
+
+        return fp
 
     def lint_webhooks(self, page: Page, stats: LintStats):
         """Lint a Page with Webhook setup best practice rules."""
@@ -63,6 +86,18 @@ class Pages:
             stats = self.rules.missing_webhook_event_handlers(page, stats)
 
         return stats
+    
+    def lint_form(self, page: Page, stats: LintStats):
+        """Lint the Form and sub-resources within it for the Page."""
+        parameters = page.form.get("parameters", None)
+
+        if parameters:
+            for param in parameters:
+                fp = self.get_form_parameter_data(param, page)
+                stats = self.routes.lint_reprompt_handlers(fp, stats)
+            
+        return stats
+
 
     def lint_page(self, page: Page, stats: LintStats):
         """Lint a Single Page file."""
@@ -82,6 +117,7 @@ class Pages:
             page.verbose = self.verbose
             page.entry = page.data.get("entryFulfillment", None)
             page.events = page.data.get("eventHandlers", None)
+            page.form = page.data.get("form", None)
             page.routes = page.data.get("transitionRoutes", None)
             page.route_groups = page.data.get("transitionRouteGroups", None)
 
@@ -92,6 +128,7 @@ class Pages:
             stats = self.routes.lint_entry(page, stats)
             stats = self.routes.lint_routes(page, stats)
             stats = self.routes.lint_events(page, stats)
+            stats = self.lint_form(page, stats)
             stats = self.lint_webhooks(page, stats)
 
             if page.route_groups:
