@@ -56,6 +56,7 @@ class Page:
     entry: Dict[str, Any] = None
     events: List[object] = None
     flow: Flow = None
+    form: Dict[str, Any] = None
     has_webhook: bool = False
     has_webhook_event_handler: bool = False
     page_file: str = None
@@ -64,6 +65,23 @@ class Page:
     routes: List[object] = None
     route_groups: List[str] = None
     verbose: bool = False
+
+@dataclass
+class FormParameter:
+    """Tracks Form Paramter attributes within a Page."""
+
+    advanced_settings: str = None
+    agent_id: str = None
+    data: Dict[str, Any] = None
+    display_name: str = None
+    dtmf_settings: str = None
+    entity_type: str = None
+    fill_behavior: Dict[str, Any] = None
+    init_fulfillment: Dict[str, Any] = None
+    page: Page = None
+    reprompt_handlers: Dict[str, Any] = None
+    required: bool = True
+
 
 
 @dataclass
@@ -90,6 +108,7 @@ class Fulfillment:
     display_name: str = None  # Inherit from Page easy logging
     fulfillment_type: str = None  # transition_route | event
     page: Page = None
+    parameter: str = None # Used for Reprompt Event Handlers
     target_flow: str = None
     target_page: str = None
     text: str = None
