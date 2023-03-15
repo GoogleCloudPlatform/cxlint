@@ -180,7 +180,7 @@ class Common:
         agent_local_path: str,
         resource_filter: Dict[str, bool]):
         """PreLint Check to ensure the resource directory exists.
-        
+
         The `resources` dict uses camelCase because the file structure is in
         camelCase. The `resource_filter` uses snake_case because the incoming
         .cxlintrc file stores the data this way. There is some minor string
@@ -206,8 +206,8 @@ class Common:
         resources.pop("testCases", None)
 
         # Check against user requrest filters
-        for resource, filter in resource_filter.items():
-            if not filter:
+        for resource, value in resource_filter.items():
+            if not value:
                 resources[resource] = False
 
         return resources

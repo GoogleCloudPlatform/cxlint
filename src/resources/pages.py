@@ -22,7 +22,7 @@ from typing import Dict, Any
 
 from common import Common
 from rules import RulesDefinitions
-from resources.types import Flow, Page, LintStats, FormParameter, Fulfillment
+from resources.types import Flow, Page, LintStats, FormParameter
 from resources.routes import Fulfillments
 
 
@@ -55,7 +55,7 @@ class Pages:
             page_paths.append(page_file_path)
 
         return page_paths
-    
+
     @staticmethod
     def get_form_parameter_data(param: Dict[str, Any], page: Page):
         fp = FormParameter(page=page)
@@ -86,7 +86,7 @@ class Pages:
             stats = self.rules.missing_webhook_event_handlers(page, stats)
 
         return stats
-    
+
     def lint_form(self, page: Page, stats: LintStats):
         """Lint the Form and sub-resources within it for the Page."""
         parameters = page.form.get("parameters", None)
@@ -95,7 +95,7 @@ class Pages:
             for param in parameters:
                 fp = self.get_form_parameter_data(param, page)
                 stats = self.routes.lint_reprompt_handlers(fp, stats)
-            
+
         return stats
 
 

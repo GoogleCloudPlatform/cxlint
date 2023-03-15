@@ -89,11 +89,11 @@ class Fulfillments:
         """Extract trigger info from route based on primary key."""
 
         if route.fulfillment_type == "event":
-            trigger = f'event : {route.data.get("event", None)}'
+            trigger = f"event : {route.data.get('event', None)}"
 
         if route.fulfillment_type == "reprompt_handler":
-            trigger = f'{route.parameter} : event : '\
-                f'{route.data.get("event", None)}'
+            trigger = f"{route.parameter} : event : "\
+                f"{route.data.get('event', None)}"
 
         if route.fulfillment_type == "transition_route":
             intent_condition = self.collect_transition_route_trigger(route)
@@ -204,17 +204,17 @@ class Fulfillments:
                     self.update_route_parameters(route, item)
 
         return stats
-    
+
     def lint_reprompt_handlers(self, fp: FormParameter, stats: LintStats):
         """Lint for Reprompt Event Handlers inside Form parameters.
-        
+
         While Reprompt Event Handlers are technically Events, they differ from
         standard Page level Events because they act on the FormParameter data
         structure, not Fulfillment Route data structure as standard Events do.
         """
         if not fp.reprompt_handlers:
             return stats
-        
+
         for handler in fp.reprompt_handlers:
             route = Fulfillment(page=fp.page)
             route.data = handler
