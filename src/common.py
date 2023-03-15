@@ -15,6 +15,7 @@
 # limitations under the License.
 
 import logging
+import os
 import re
 
 from configparser import ConfigParser
@@ -173,3 +174,40 @@ class Common:
                 filename = resource.entities[lang_code]["file_path"]
 
         return filename
+
+    @staticmethod
+    def resource_precheck(
+        agent_local_path: str,
+        resource_filter: Dict[str, bool]):
+        """PreLint Check to ensure the resource directory exists.
+        
+        The `resources` dict uses camelCase because the file structure is in
+        camelCase. The `resource_filter` uses snake_case because the incoming
+        .cxlintrc file stores the data this way. There is some minor string
+        manipulation for resources that have 2 names to ensure we're checking
+        everything appropriately."""
+        resources = {
+            "flows": False,
+            "entityTypes": False,
+            "intents": False,
+            "testCases": False,
+            "webhooks": False
+        }
+
+        # Ensure resource directories exist
+        for resource, _ in resources.items():
+            if resource in os.listdir(agent_local_path):
+                resources[resource] = True
+
+        # Clean up dict so we can use snake_case from here on
+        resources["entity_types"] = resources["entityTypes"]
+        resources["test_cases"] = resources["testCases"]
+        resources.pop("entityTypes", None)
+        resources.pop("testCases", None)
+
+        # Check against user requrest filters
+        for resource, filter in resource_filter.items():
+            if not filter:
+                resources[resource] = False
+
+        return resources
