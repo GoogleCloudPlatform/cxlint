@@ -19,7 +19,7 @@ from typing import Dict, Any
 
 from common import Common
 from rules import RulesDefinitions
-from resources.types import Page, Fulfillment, LintStats
+from resources.types import Page, Fulfillment, LintStats, FormParameter
 
 
 class Fulfillments:
@@ -91,6 +91,10 @@ class Fulfillments:
         if route.fulfillment_type == "event":
             trigger = f'event : {route.data.get("event", None)}'
 
+        if route.fulfillment_type == "reprompt_handler":
+            trigger = f'{route.parameter} : event : '\
+                f'{route.data.get("event", None)}'
+
         if route.fulfillment_type == "transition_route":
             intent_condition = self.collect_transition_route_trigger(route)
             trigger = f"route : {intent_condition}"
@@ -110,7 +114,7 @@ class Fulfillments:
     def set_route_targets(self, route: Fulfillment):
         """Determine the Route Targets for the specified route.
 
-        This method is what will primary build out the graph structure for the
+        Primary function is to build out the graph structure for the
         Flow based on the current page and where the routes are pointing to.
         The graph structure can then be traversed later to determine any errors
         or inconsistencies in design.
@@ -198,6 +202,37 @@ class Fulfillments:
 
                 if "parameter" in item:
                     self.update_route_parameters(route, item)
+
+        return stats
+    
+    def lint_reprompt_handlers(self, fp: FormParameter, stats: LintStats):
+        """Lint for Reprompt Event Handlers inside Form parameters.
+        
+        While Reprompt Event Handlers are technically Events, they differ from
+        standard Page level Events because they act on the FormParameter data
+        structure, not Fulfillment Route data structure as standard Events do.
+        """
+        if not fp.reprompt_handlers:
+            return stats
+        
+        for handler in fp.reprompt_handlers:
+            route = Fulfillment(page=fp.page)
+            route.data = handler
+            route.agent_id = fp.page.agent_id
+            route.fulfillment_type = "reprompt_handler"
+            route.parameter = fp.display_name
+            route.trigger = self.get_trigger_info(route)
+            route = self.set_route_targets(route)
+            path = route.data.get("triggerFulfillment", None)
+            event = route.data.get("event", None)
+
+            if not path and not event:
+                continue
+
+            # Flag for Webhook Handler
+            self.check_for_webhook(fp.page, path)
+
+            stats = self.lint_fulfillment_type(stats, route, path, "messages")
 
         return stats
 
