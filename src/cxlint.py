@@ -201,20 +201,24 @@ class CxLint:
         #     data = json.load(agent_data)
 
         start_message = f'{"=" * 5} LINTING AGENT {"=" * 5}\n'
-        # logging.info(start_message)
         console.log(start_message)
+        resources = Common.resource_precheck(
+            agent_local_path, self.resource_filter)
 
-        if self.resource_filter.get("flows", False):
+        if resources["flows"]:
             self.flows.lint_flows_directory(agent_local_path)
 
-        if self.resource_filter.get("entity_types", False):
+        if resources["entity_types"]:
             self.entity_types.lint_entity_types_directory(agent_local_path)
 
-        if self.resource_filter.get("intents", False):
+        if resources["intents"]:
             self.intents.lint_intents_directory(agent_local_path)
 
-        if self.resource_filter.get("test_cases", False):
+        if resources["test_cases"]:
             self.test_cases.lint_test_cases_directory(agent_local_path)
+
+        if resources["webhooks"]:
+            pass
 
         if self.output_file:
             console.save_text(self.output_file)
