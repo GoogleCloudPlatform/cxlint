@@ -21,7 +21,7 @@ from configparser import ConfigParser
 from typing import Dict, Any
 
 from common import Common
-from rules import RulesDefinitions
+from rules.pages import PageRules
 from resources.types import Flow, Page, LintStats, FormParameter
 from resources.routes import Fulfillments
 
@@ -36,8 +36,7 @@ class Pages:
         self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
-
+        self.rules = PageRules(console, self.disable_map)
         self.routes = Fulfillments(verbose, config, console)
 
     @staticmethod
@@ -77,15 +76,6 @@ class Pages:
             fp.dtmf_settings = fp.advanced_settings.get("dtmfSettings", None)
 
         return fp
-
-    def lint_webhooks(self, page: Page, stats: LintStats):
-        """Lint a Page with Webhook setup best practice rules."""
-
-        # missing-webhook-event-handlers
-        if self.disable_map.get("missing-webhook-event-handlers", True):
-            stats = self.rules.missing_webhook_event_handlers(page, stats)
-
-        return stats
 
     def lint_form(self, page: Page, stats: LintStats):
         """Lint the Form and sub-resources within it for the Page."""
@@ -129,10 +119,11 @@ class Pages:
             stats = self.routes.lint_routes(page, stats)
             stats = self.routes.lint_events(page, stats)
             stats = self.lint_form(page, stats)
-            stats = self.lint_webhooks(page, stats)
 
             if page.route_groups:
                 page = self.routes.set_route_group_targets(page)
+
+            stats = self.rules.run_page_rules(page, stats)
 
             page_file.close()
 

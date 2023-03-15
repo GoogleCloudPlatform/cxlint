@@ -21,7 +21,7 @@ from configparser import ConfigParser
 from typing import Dict, List, Any
 
 from common import Common
-from rules import RulesDefinitions
+from rules.test_cases import TestCaseRules
 from resources.types import TestCase, LintStats
 
 
@@ -33,7 +33,7 @@ class TestCases:
         self.console = console
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
+        self.rules = TestCaseRules(console, self.disable_map)
         self.tag_filter = self.load_tag_filter(config)
         self.display_name_filter = self.load_display_name_filter(config)
         # self.intent_map_for_tcs = None
@@ -231,17 +231,7 @@ class TestCases:
 
             tc_file.close()
 
-        if tc.qualified:
-            # R007 explicit-tps-in-test-cases
-            if self.disable_map.get("explicit-tps-in-test-cases", True):
-                stats.total_test_cases += 1
-                stats = self.rules.explicit_tps_in_tcs(tc, stats)
-
-        if tc.has_invalid_intent:
-            # R008 invalid-intent-in-test-cases
-            if self.disable_map.get("invalid-intent-in-test-cases", True):
-                stats.total_test_cases += 1
-                stats = self.rules.invalid_intent_in_tcs(tc, stats)
+        stats = self.rules.run_test_case_rules(tc, stats)
 
         return stats
 

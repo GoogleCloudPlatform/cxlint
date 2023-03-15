@@ -18,7 +18,7 @@ from configparser import ConfigParser
 from typing import Dict, Any
 
 from common import Common
-from rules import RulesDefinitions
+from rules.response_messages import ResponseMessageRules
 from resources.types import Page, Fulfillment, LintStats, FormParameter
 
 
@@ -29,10 +29,10 @@ class Fulfillments:
         self.verbose = verbose
         self.console = console
         self.config = config
-        self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
+        self.agent_type = Common.load_agent_type(config)
+        self.rules = ResponseMessageRules(console, self.disable_map)
         self.route_parameters = {}
 
     @staticmethod
@@ -159,27 +159,6 @@ class Fulfillments:
         else:
             self.route_parameters[flow_name] = {page_name: [item]}
 
-    def lint_agent_responses(self, route: Fulfillment, stats: LintStats) -> str:
-        """Executes all Text-based Fulfillment linter rules."""
-        voice = False
-        route.verbose = self.verbose
-
-        if self.agent_type == "voice":
-            voice = True
-
-        # closed-choice-alternative
-        if self.disable_map.get("closed-choice-alternative", True) and voice:
-            stats = self.rules.closed_choice_alternative_parser(route, stats)
-
-        # wh-questions
-        if self.disable_map.get("wh-questions", True) and voice:
-            stats = self.rules.wh_questions(route, stats)
-
-        # clarifying-questions
-        if self.disable_map.get("clarifying-questions", True) and voice:
-            stats = self.rules.clarifying_questions(route, stats)
-
-        return stats
 
     def lint_fulfillment_type(
         self, stats: LintStats, route: Fulfillment, path: object, key: str
@@ -198,7 +177,7 @@ class Fulfillments:
                         stats.total_inspected += 1
                         route.text = text
 
-                        stats = self.lint_agent_responses(route, stats)
+                        stats = self.rules.run_rm_text_rules(route, stats)
 
                 if "parameter" in item:
                     self.update_route_parameters(route, item)
@@ -216,8 +195,9 @@ class Fulfillments:
             return stats
 
         for handler in fp.reprompt_handlers:
-            route = Fulfillment(page=fp.page)
+            route = Fulfillment(page=fp.page, agent_type=self.agent_type)
             route.data = handler
+            route.verbose = self.verbose
             route.agent_id = fp.page.agent_id
             route.fulfillment_type = "reprompt_handler"
             route.parameter = fp.display_name
@@ -242,7 +222,7 @@ class Fulfillments:
             return stats
 
         for route_data in page.events:
-            route = Fulfillment(page=page)
+            route = Fulfillment(page=page, agent_type=self.agent_type)
             route.data = route_data
             route.agent_id = page.agent_id
             route.fulfillment_type = "event"

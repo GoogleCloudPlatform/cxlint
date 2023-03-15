@@ -20,7 +20,6 @@ import json
 from configparser import ConfigParser
 
 from common import Common
-from rules import RulesDefinitions
 
 from resources.types import RouteGroup, Flow, LintStats
 from resources.routes import Fulfillments
@@ -36,7 +35,6 @@ class RouteGroups:
         self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
         self.special_pages = [
             "End Session",
             "End Flow",

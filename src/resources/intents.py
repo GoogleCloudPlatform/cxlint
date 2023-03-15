@@ -20,7 +20,7 @@ import os
 from configparser import ConfigParser
 
 from common import Common
-from rules import RulesDefinitions
+from rules.intents import IntentRules
 from resources.types import Intent, LintStats
 
 
@@ -32,7 +32,7 @@ class Intents:
         self.console = console
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
+        self.rules = IntentRules(console, self.disable_map)
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
         self.lang_code_filter = Common.load_lang_code_filter(config)
@@ -99,17 +99,6 @@ class Intents:
 
         return intent_paths
 
-    def apply_intent_rules(
-        self, intent: Intent, lang_code: str, stats: LintStats
-    ) -> LintStats:
-        """Apply each rule to the specified intent."""
-
-        # intent-min-tps
-        if self.disable_map.get("intent-min-tps", True):
-            stats = self.rules.min_tps_head_intent(intent, lang_code, stats)
-
-        return stats
-
     def check_intent_filters(self, intent: Intent) -> Intent:
         """Determines if the Intent should be filtered for linting."""
         if self.include_filter:
@@ -159,7 +148,8 @@ class Intents:
                     phrases = data.get("trainingPhrases", None)
                     intent.training_phrases[lang_code]["tps"] = phrases
 
-                    stats = self.apply_intent_rules(intent, lang_code, stats)
+                    stats = self.rules.run_training_phrase_rules(
+                        intent, lang_code, stats)
 
                     tps.close()
 
@@ -171,8 +161,7 @@ class Intents:
             self.build_lang_code_paths(intent)
             stats = self.lint_language_codes(intent, stats)
 
-        # intent-missing-tps
-        elif self.disable_map.get("intent-missing-tps", True):
+        else:
             stats = self.rules.missing_training_phrases(intent, stats)
 
         return stats

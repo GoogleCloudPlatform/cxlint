@@ -21,7 +21,8 @@ from configparser import ConfigParser
 from typing import List
 
 from common import Common
-from rules import RulesDefinitions
+from rules.flows import FlowRules
+from rules.pages import PageRules
 
 from graph import Graph
 from resources.types import Flow, Page, LintStats
@@ -40,7 +41,6 @@ class Flows:
         self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
         self.special_pages = [
@@ -54,6 +54,13 @@ class Flows:
         self.pages = Pages(verbose, config, console)
         self.rgs = RouteGroups(verbose, config, console)
         self.routes = Fulfillments(verbose, config, console)
+        self.rules = FlowRules(console, self.disable_map)
+
+        # Even though Start Pages are technically the Flow object, their
+        # structure is still similar to a Page, so for "page level" type
+        # rules, we will need this class to lint the Start Page.
+        self.page_rules = PageRules(console, self.disable_map)
+
 
     @staticmethod
     def load_include_filter(config: ConfigParser) -> str:
@@ -276,34 +283,13 @@ class Flows:
             # Order of linting is important
             stats = self.routes.lint_routes(page, stats)
             stats = self.routes.lint_events(page, stats)
-            stats = self.pages.lint_webhooks(page, stats)
 
             if page.route_groups:
                 page = self.routes.set_route_group_targets(page)
 
+            stats = self.page_rules.run_page_rules(page, stats)
+
             flow_file.close()
-
-        return stats
-
-    def lint_graph(self, flow: Flow, stats: LintStats):
-        """Lint the graph structure for the specified Flow.
-
-        In this method we are taking the completed Flow Graph that was built
-        for this specific Flow and checking for any design inconsistencies.
-        These include things like Unused, Dangling, and Unreachable pages.
-        """
-
-        # unused-pages
-        if self.disable_map.get("unused-pages", True):
-            stats = self.rules.unused_pages(flow, stats)
-
-        # dangling-pages
-        if self.disable_map.get("dangling-pages", True):
-            stats = self.rules.dangling_pages(flow, stats)
-
-        # unreachable-pages
-        if self.disable_map.get("unreachable-pages", True):
-            stats = self.rules.unreachable_pages(flow, stats)
 
         return stats
 
@@ -328,7 +314,7 @@ class Flows:
             flow = self.find_dangling_pages(flow)
             flow = self.find_unreachable_pages(flow)
 
-            stats = self.lint_graph(flow, stats)
+            stats = self.rules.run_flow_rules(flow, stats)
 
         return stats
 

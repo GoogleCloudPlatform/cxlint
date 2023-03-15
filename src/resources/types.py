@@ -22,7 +22,7 @@ from graph import Graph
 
 @dataclass
 class Flow:
-    """ "Used to track current Flow Attributes."""
+    """Used to track current Flow Attributes."""
 
     agent_id: str = None
     all_pages: set = field(default_factory=set)
@@ -83,7 +83,6 @@ class FormParameter:
     required: bool = True
 
 
-
 @dataclass
 class RouteGroup:
     """Used to track current RouteGroup Attributes."""
@@ -104,6 +103,7 @@ class Fulfillment:
     """Used to track current Fulfillment Attributes."""
 
     agent_id: str = None
+    agent_type: str = None
     data: Dict[str, Any] = None
     display_name: str = None  # Inherit from Page easy logging
     fulfillment_type: str = None  # transition_route | event
@@ -137,7 +137,7 @@ class Intent:
 
 @dataclass
 class EntityType:
-    """ "Used to track current Flow Attributes."""
+    """Used to track current Flow Attributes."""
 
     agent_id: str = None
     data: Dict[str, Any] = None

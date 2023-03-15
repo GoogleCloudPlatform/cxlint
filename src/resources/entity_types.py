@@ -20,7 +20,7 @@ import os
 from configparser import ConfigParser
 
 from common import Common
-from rules import RulesDefinitions
+from rules.entity_types import EntityTypeRules
 from resources.types import EntityType, LintStats
 
 
@@ -33,7 +33,7 @@ class EntityTypes:
         self.config = config
         self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = RulesDefinitions(self.console)
+        self.rules = EntityTypeRules(console, self.disable_map)
         self.lang_code_filter = Common.load_lang_code_filter(config)
 
     @staticmethod
@@ -98,11 +98,7 @@ class EntityTypes:
                     entities = data.get("entities", None)
                     etype.entities[lang_code]["entities"] = entities
 
-                    # yes-no-entities
-                    if self.disable_map.get("yes-no-entities", True):
-                        stats = self.rules.yes_no_entities(
-                            etype, lang_code, stats
-                        )
+                    stats = self.rules.run_entity_type_rules(etype, lang_code, stats)
 
                     ent_file.close()
 
