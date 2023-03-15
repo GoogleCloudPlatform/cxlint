@@ -128,9 +128,7 @@ class EntityTypes:
         )
 
         self.gather_entity_type_metadata(etype)
-
         stats = self.lint_entities(etype, stats)
-        # stats = self.lint_pages_directory(flow, stats)
 
         return stats
 
