@@ -98,7 +98,8 @@ class EntityTypes:
                     entities = data.get("entities", None)
                     etype.entities[lang_code]["entities"] = entities
 
-                    stats = self.rules.run_entity_type_rules(etype, lang_code, stats)
+                    stats = self.rules.run_entity_type_rules(
+                        etype, lang_code, stats)
 
                     ent_file.close()
 

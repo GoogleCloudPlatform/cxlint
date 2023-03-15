@@ -39,14 +39,14 @@ class IntentRules:
             hid = True
 
         return hid
-    
+
     # intent-missing-metadata
     def intent_missing_metadata(
         self,
         intent: Intent,
         stats: LintStats) -> LintStats:
         """Flags Intent that has missing metadata file.
-        
+
         This rule is separate from the main group of Intent rules because it
         checks for the existence of Intent files and metadata prior to
         unpacking any language codes or training phrases. It will not be
@@ -136,7 +136,7 @@ class IntentRules:
         lang_code: str,
         stats: LintStats) -> LintStats:
         """Checks and Executes all Intent/Training Phrase level rules.
-        
+
         The requirements for a rule in this section are:
           - Intent must have at least 1 langauge_code file
           - Intent must have at least 1 training phrase

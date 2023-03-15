@@ -20,7 +20,6 @@ from typing import Dict, Any
 from resources.types import Fulfillment, LintStats, Resource
 
 from rules.logger import RulesLogger
-from common import Common
 
 class ResponseMessageRules:
     """Response Message Rules and Definitions."""
@@ -119,10 +118,10 @@ class ResponseMessageRules:
         route: Fulfillment,
         stats: LintStats) -> LintStats:
         """Checks and Executes all Response Message level rules.
-        
+
         This set of rules will be executed against the Response Messages that
         are of type `text`. This is equivalent to the "Agent Says" sections of
-        the agent design-time console. 
+        the agent design-time console.
         """
         voice = False
 

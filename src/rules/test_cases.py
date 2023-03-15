@@ -77,7 +77,7 @@ class TestCaseRules:
         self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     def run_test_case_rules(self, tc: TestCase, stats: LintStats) -> LintStats:
         """Checks and Executes all Test Case level rules."""
         if tc.qualified:

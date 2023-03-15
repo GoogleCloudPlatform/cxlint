@@ -29,7 +29,7 @@ class PageRules:
         self.console = console
         self.disable_map = disable_map
         self.log = RulesLogger(console=console)
-    
+
     # missing-webhook-event-handlers
     def missing_webhook_event_handlers(
         self, page: Page, stats: LintStats
@@ -54,7 +54,7 @@ class PageRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     def run_page_rules(self, page: Page, stats: LintStats):
         """Checks and Executes all Page level rules."""
 

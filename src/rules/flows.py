@@ -95,7 +95,7 @@ class FlowRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     def run_flow_rules(self, flow: Flow, stats: LintStats) -> LintStats:
         """Checks and Executes all Flow level rules."""
         # unused-pages

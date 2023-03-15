@@ -14,8 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Any
-from resources.types import Page, LintStats, Resource
+from resources.types import Resource
 
 class RulesLogger:
     """Common Logger for Rules output."""
