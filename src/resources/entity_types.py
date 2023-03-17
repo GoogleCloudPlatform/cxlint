@@ -31,10 +31,11 @@ class EntityTypes:
         self.verbose = verbose
         self.console = console
         self.config = config
-        self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = EntityTypeRules(console, self.disable_map)
+        self.disable_map = Common.load_message_controls(config)
         self.lang_code_filter = Common.load_lang_code_filter(config)
+        self.naming_conventions = Common.load_naming_conventions(config)
+        self.rules = EntityTypeRules(console, self.disable_map)
 
     @staticmethod
     def build_entity_type_path_list(agent_local_path: str):
@@ -58,7 +59,7 @@ class EntityTypes:
         return entity_type_paths
 
     @staticmethod
-    def build_lang_code_paths(etype: EntityType()):
+    def build_lang_code_paths(etype: EntityType):
         """Builds dict of lang codes and file locations.
 
         The language_codes and paths for each file are stored in a dictionary
@@ -146,6 +147,8 @@ class EntityTypes:
             etype.verbose = self.verbose
             etype.agent_id = self.agent_id
             etype.dir_path = entity_type_path
+            etype.naming_pattern = self.naming_conventions.get(
+                "entity_type_name", None)
             stats = self.lint_entity_type(etype, stats)
 
         header = "-" * 20

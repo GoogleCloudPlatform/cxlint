@@ -109,6 +109,34 @@ class EntityTypeRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
+    
+    # naming-conventions
+    def entity_type_naming_convention(
+        self,
+        etype: EntityType,
+        stats: LintStats) -> LintStats:
+        """Check that the Entity Type display name conform to given pattern."""
+        rule = "R015: Naming Conventions"
+
+        if etype.naming_pattern:
+            res = re.search(etype.naming_pattern, etype.display_name)
+
+            stats.total_inspected += 1
+
+        if not res:
+            resource = Resource()
+            resource.agent_id = etype.agent_id
+            resource.entity_type_display_name = etype.display_name
+            resource.entity_type_id = etype.resource_id
+            resource.resource_type = "entity_type"
+
+            message = ": Entity Type Display Name does not meet the specified"\
+                f" Convention : {etype.naming_pattern}"
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
 
     # yes-no-entities
     def yes_no_entities(
@@ -134,6 +162,10 @@ class EntityTypeRules:
         lang_code: str,
         stats: LintStats) -> LintStats:
         """Checks and Executes all Entity Type level rules."""
+        # naming-conventions
+        if self.disable_map.get("naming-conventions", True):
+            stats = self.entity_type_naming_convention(etype, stats)
+
         # yes-no-entities
         if self.disable_map.get("yes-no-entities", True):
             stats = self.yes_no_entities(etype, lang_code, stats)
