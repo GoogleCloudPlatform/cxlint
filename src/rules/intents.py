@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Dict, Any
+import re
+
+from typing import Dict, Any, List, Union
 from resources.types import Intent, LintStats, Resource
 
 from rules.logger import RulesLogger
@@ -31,7 +33,7 @@ class IntentRules:
         self.log = RulesLogger(console=console)
 
     @staticmethod
-    def check_if_head_intent(intent: Intent):
+    def check_if_head_intent(intent: Intent) -> bool:
         """Checks if Intent is Head Intent based on labels and name."""
         hid = False
 
@@ -39,6 +41,133 @@ class IntentRules:
             hid = True
 
         return hid
+    
+    @staticmethod
+    def check_if_confirmation_intent(tps: List[str]) -> bool:
+        """Check if the Intent contains yes/no phrases for confirmation."""
+        confirm = False
+        confirm_set = set(["yes", "no"])
+
+        res = confirm_set.intersection(set(tps))
+        if res:
+            confirm = True
+
+        return confirm
+    
+    @staticmethod
+    def check_if_escalation_intent(tps: List[str]) -> bool:
+        """Check if the Intent contains escalation phrases."""
+        escalate = False
+        escalate_set = set(["escalate", "operator"])
+
+        res = escalate_set.intersection(set(tps))
+        if res:
+            escalate = True
+
+        return escalate
+
+    @staticmethod
+    def flatten_training_phrase_parts(parts: Dict[str, Any]) -> List[str]:
+        """Flatten the Training Phrase Parts proto to list of strings."""
+
+        # If the TP Part has more than 1 part, we need to extract and
+        # concat the data into a single string
+        if len(parts) > 1:
+            utterance = ''
+            for part in parts:
+                utterance += part.get("text", '')
+
+        # Otherwise, there's just 1 part so we can take it as-is
+        else:
+            utterance = parts[0].get("text", None)
+
+        return utterance
+
+    def gather_training_phrases(self, intent: Intent, lang_code: str) -> List[str]:
+        """Flatten the Training Phrase proto to a list of strings."""
+        tps_flat = []
+        tps_original = intent.training_phrases.get(lang_code, None)['tps']
+
+        for tp in tps_original:
+            parts = tp.get("parts", None)
+            utterance = self.flatten_training_phrase_parts(parts)
+            tps_flat.append(utterance)
+
+        return tps_flat
+    
+    def check_and_log_naming(
+        self,
+        intent: Intent,
+        stats: LintStats,
+        res: Union[re.Match, None],
+        pattern: str):
+        """Checks for final naming match and calls logger."""
+        rule = "R015: Naming Conventions"
+
+        if not res:
+            resource = Resource()
+            resource.agent_id = intent.agent_id
+            resource.intent_display_name = intent.display_name
+            resource.intent_id = intent.resource_id
+            resource.resource_type = "intent"
+
+            message = ": Intent Display Name does not meet the specified"\
+                f" Convention : {pattern}"
+            
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
+
+    
+    # naming-conventions
+    def intent_naming_convention(
+        self,
+        intent: Intent,
+        lang_code: str,
+        stats: LintStats) -> LintStats:
+        """Check that the Display Name conforms to naming conventions."""
+
+        hid = self.check_if_head_intent(intent)
+        tps = self.gather_training_phrases(intent, lang_code)
+        confirm = self.check_if_confirmation_intent(tps)
+        escalate = self.check_if_escalation_intent(tps)
+
+        # Head Intents
+        if hid and intent.naming_pattern_head:
+            pattern = intent.naming_pattern_head
+            res = re.search(pattern, intent.display_name)
+            stats.total_inspected += 1
+
+            stats = self.check_and_log_naming(intent, stats, res, pattern)
+
+        # Confirmation Intents
+        elif confirm and intent.naming_pattern_confirmation:
+            pattern = intent.naming_pattern_confirmation
+            res = re.search(pattern, intent.display_name)
+            stats.total_inspected += 1
+
+            stats = self.check_and_log_naming(intent, stats, res, pattern)
+
+        # Escalation Intents
+        elif escalate and intent.naming_pattern_escalation:
+            pattern = intent.naming_pattern_escalation
+            res = re.search(pattern, intent.display_name)
+            stats.total_inspected += 1
+            
+            stats = self.check_and_log_naming(intent, stats, res, pattern)
+        
+        # Generic Intents
+        elif intent.naming_pattern_generic:
+            pattern = intent.naming_pattern_generic
+            res = re.search(pattern, intent.display_name)
+            stats.total_inspected += 1
+            
+            stats = self.check_and_log_naming(intent, stats, res, pattern)
+
+        return stats
+        
 
     # intent-missing-metadata
     def intent_missing_metadata(
@@ -141,6 +270,9 @@ class IntentRules:
           - Intent must have at least 1 langauge_code file
           - Intent must have at least 1 training phrase
         """
+        # naming-conventions
+        if self.disable_map.get("naming-conventions", True):
+            stats = self.intent_naming_convention(intent, lang_code, stats)
 
         # intent-min-tps
         if self.disable_map.get("intent-min-tps", True):

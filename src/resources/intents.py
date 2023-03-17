@@ -17,6 +17,7 @@
 import json
 import os
 
+from typing import Dict
 from configparser import ConfigParser
 
 from common import Common
@@ -30,12 +31,27 @@ class Intents:
     def __init__(self, verbose: bool, config: ConfigParser, console):
         self.verbose = verbose
         self.console = console
-        self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = IntentRules(console, self.disable_map)
+        self.disable_map = Common.load_message_controls(config)
+        self.lang_code_filter = Common.load_lang_code_filter(config)
+        self.naming_conventions = Common.load_naming_conventions(config)
+
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
-        self.lang_code_filter = Common.load_lang_code_filter(config)
+
+        self.rules = IntentRules(console, self.disable_map)
+
+    @staticmethod
+    def load_naming_conventions(intent: Intent, styles: Dict[str, str]):
+        """Load all Intent naming conventions to the current object."""
+        intent.naming_pattern_generic = styles.get("intent_generic_name")
+        intent.naming_pattern_head = styles.get("intent_head_name", None)
+        intent.naming_pattern_confirmation = styles.get(
+            "intent_confirmation_name")
+        intent.naming_pattern_escalation = styles.get(
+            "intent_escalation_name", None)
+        
+        return intent
 
     @staticmethod
     def load_include_filter(config: ConfigParser) -> str:
@@ -207,8 +223,10 @@ class Intents:
             intent.verbose = self.verbose
             intent.agent_id = self.agent_id
             intent.dir_path = intent_path
+            
+            intent = self.load_naming_conventions(
+                intent, self.naming_conventions)
             stats = self.lint_intent(intent, stats)
-            # stats.total_inspected += 1
 
         header = "-" * 20
         rating = Common.calculate_rating(
