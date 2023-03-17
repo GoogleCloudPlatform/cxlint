@@ -16,9 +16,45 @@
 | R012 | [Unused Pages](#unused-pages) | Pages |
 | R013 | [Dangling Pages](#dangling-pages) | Pages |
 | R014 | [Unreachable Pages](#unreachable-pages) | Pages |
+| R015 | [Naming Conventions](#naming-conventions) | All Resource Display Names |
 
 <br>
 <br>
+
+# Naming Conventions
+_**Rule: If the inspected resource display name does not match the provided Naming Convention pattern, raise a warning.**_
+
+Also known as _**Style Guide**_ enforcement, a set of naming conventions can be provided to the Linter to inspect the style of the resource display name.  
+Some reesources have several sub-types that can checked.   
+Below are the current naming conventions that can be provided for the various resource types:  
+
+- entity_type_name
+  - We are explicitly checking the Entity Type Display Name only.
+- flow_name
+- page_generic_name
+  - If provided and Page does not match Form or Webhook type, we will use this pattern to check _all_ remaining pages.
+- page_with_form_name
+  - If we determine that a Page contains a Form, we will use this pattern to check against the Page Name.
+- page_with_webhook_name
+  -  If we determine that a Page contains a Webhook, we will use this pattern to check against the Page Name.
+- intent_generic_name
+  - If provided, we will use this pattern to inspect _all_ intents.
+- intent_head_name
+  - We determine head intents based on either of these being present:
+    1. Intent Display name contains word 'head'
+    2. Intent Tags contain key 'head'
+- intent_confirmation_name
+  - We determine confirmation intents based on either of the following:
+    1. Intent Training Phrases contain 'yes'
+    2. Intent Training Phrases contain 'no'
+- intent_escalation_name
+  - We determine escalation intents based on either of the following:
+    1. Intent Training Phrases contain 'escalate'
+    2. Intent Training Phrases contain 'operator'
+- test_case_name 
+- webhook_name
+
+<br> 
 
 # Flow / Page Rules
 ### Closed-Choice Alternative Missing Question Mark
