@@ -31,6 +31,7 @@ from resources.flows import Flows
 from resources.entity_types import EntityTypes
 from resources.intents import Intents
 from resources.test_cases import TestCases
+from resources.webhooks import Webhooks
 
 console = Console(
     record=True,
@@ -132,6 +133,7 @@ class CxLint:
         self.intents = Intents(verbose, config, console)
         self.flows = Flows(verbose, config, console)
         self.test_cases = TestCases(verbose, config, console)
+        self.webhooks = Webhooks(verbose, config, console)
 
     @staticmethod
     def read_and_append_to_config(section: str, key: str, data: Any):
@@ -238,7 +240,7 @@ class CxLint:
             self.test_cases.lint_test_cases_directory(agent_local_path)
 
         if resources["webhooks"]:
-            pass
+            self.webhooks.lint_webhooks_directory(agent_local_path)
 
         if self.output_file:
             console.save_text(self.output_file)

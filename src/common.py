@@ -114,6 +114,7 @@ class Common:
             "entity_type": r".*\/entityTypes\/([^\/]*)",
             "intent": r".*\/intents\/([^\/]*)",
             "route_group": r".*\/transitionRouteGroups\/([^\/]*)",
+            "webhook": r".*\/webhooks\/([^\/]*)\."
         }
         resource_name = re.match(regex_map[resource_type], in_path).groups()[0]
 

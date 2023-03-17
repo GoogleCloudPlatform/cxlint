@@ -19,6 +19,15 @@ from dataclasses import dataclass, field
 
 from graph import Graph
 
+@dataclass
+class AgentMetadata:
+    """Used to track the current Agent Metadata attrinbutes."""
+
+    default_language_code: str = None
+    dtmf_settings: bool = False
+    logging_enabled: bool = False
+    speech_adaptation: bool = False
+
 
 @dataclass
 class Flow:
@@ -30,18 +39,15 @@ class Flow:
     data: Dict[str, Any] = field(default_factory=dict)
     dangling_pages: set = field(default_factory=set)
     dir_path: str = None  # Full Directory Path for this Flow
-    display_name: str = (
-        None  # Cleaned Flow Display Name (removed special chars)
-    )
-    file_name: str = (
-        None  # Original File Name of the Flow file (includes special chars)
-    )
+    display_name: str = None  # Flow Display Name (removed special chars)
+    file_name: str = None  # Original Name of Flow (includes special chars)
     filtered: bool = False
     graph: Graph = None
-    unreachable_pages: set = field(default_factory=set)
+    naming_pattern: str = None
     resource_id: str = None
     resource_type: str = "flow"
     start_page_file: str = None  # File Path Location of START_PAGE
+    unreachable_pages: set = field(default_factory=set)
     unused_pages: set = field(default_factory=set)
     verbose: bool = False
 
@@ -59,6 +65,9 @@ class Page:
     form: Dict[str, Any] = None
     has_webhook: bool = False
     has_webhook_event_handler: bool = False
+    naming_pattern_generic: str = None
+    naming_pattern_form: str = None
+    naming_pattern_webhook: str = None
     page_file: str = None
     resource_id: str = None
     resource_type: str = "page"
@@ -129,6 +138,10 @@ class Intent:
     filtered: bool = False
     labels: Dict[str, str] = None
     metadata_file: str = None
+    naming_pattern_generic: str = None
+    naming_pattern_head: str = None
+    naming_pattern_confirmation: str = None
+    naming_pattern_escalation: str = None
     resource_id: str = None
     resource_type: str = "intent"
     training_phrases: Dict[str, Any] = field(default_factory=dict)
@@ -143,10 +156,9 @@ class EntityType:
     data: Dict[str, Any] = None
     dir_path: str = None  # Full Directory Path for this Entity Type
     display_name: str = None  # Entity Type Display Name
-    entities: Dict[str, Any] = field(
-        default_factory=dict
-    )  # Map of lang codes, entities, and values
+    entities: Dict[str, Any] = field(default_factory=dict)  # Map of lang codes, entities, and values
     kind: str = None  # The kind of Entity Type represented
+    naming_pattern: str = None
     resource_id: str = None
     resource_type: str = "entity_type"
     verbose: bool = False
@@ -161,9 +173,11 @@ class TestCase:
     agent_path: str = None
     conversation_turns: List[Any] = None
     data: Dict[str, Any] = None
+    dir_path: str = None
     display_name: str = None
     has_invalid_intent: bool = False
     intent_data: List[str] = None
+    naming_pattern: str = None
     qualified: bool = False
     resource_id: str = None
     resource_type: str = "test_case"
@@ -171,6 +185,21 @@ class TestCase:
     test_config: Dict[str, Any] = None
     verbose: bool = False
 
+@dataclass
+class Webhook:
+    """Used to track current Webhook attributes."""
+
+    agent_id: str = None
+    agent_path: str = None
+    data: Dict[str, Any] = None
+    dir_path: str = None
+    display_name: str = None
+    naming_pattern: str = None
+    resource_id: str = None
+    resource_type: str = "webhook"
+    service_type: str = None
+    timeout: int = 0
+    verbose: bool = False
 
 @dataclass
 class Resource:
