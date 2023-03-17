@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 from typing import Dict, Any
 from resources.types import TestCase, LintStats, Resource
 
@@ -29,6 +31,32 @@ class TestCaseRules:
         self.console = console
         self.disable_map = disable_map
         self.log = RulesLogger(console=console)
+
+    # naming-conventions
+    def test_case_naming_convention(
+        self, tc:TestCase, stats: LintStats) -> LintStats:
+        """Check Test Case Display Name conforms to naming conventions."""
+        rule = "R015: Naming Conventions"
+
+        if tc.naming_pattern:
+            res = re.search(tc.naming_pattern, tc.display_name)
+
+            stats.total_inspected += 1
+
+        if not res:
+            resource = Resource()
+            resource.agent_id = tc.agent_id
+            resource.test_case_display_name = tc.display_name
+            resource.test_case_id = tc.resource_id
+            resource.resource_type = "test_case"
+
+            message = ": Test Case Display Name does not meet the specified"\
+                f" Convention : {tc.naming_pattern}"
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+        
+        return stats
 
     # explicit-tps-in-test-cases
     def explicit_tps_in_tcs(self, tc: TestCase, stats: LintStats) -> LintStats:
@@ -80,14 +108,18 @@ class TestCaseRules:
 
     def run_test_case_rules(self, tc: TestCase, stats: LintStats) -> LintStats:
         """Checks and Executes all Test Case level rules."""
+        # naming-conventions
+        if self.disable_map.get("naming-conventions", True):
+            stats = self.test_case_naming_convention(tc, stats)
+
+        # explicit-tps-in-test-cases
         if tc.qualified:
-            # R007 explicit-tps-in-test-cases
             if self.disable_map.get("explicit-tps-in-test-cases", True):
                 stats.total_test_cases += 1
                 stats = self.explicit_tps_in_tcs(tc, stats)
 
+        # invalid-intent-in-test-cases
         if tc.has_invalid_intent:
-            # R008 invalid-intent-in-test-cases
             if self.disable_map.get("invalid-intent-in-test-cases", True):
                 stats.total_test_cases += 1
                 stats = self.invalid_intent_in_tcs(tc, stats)

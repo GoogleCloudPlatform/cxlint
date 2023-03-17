@@ -31,12 +31,13 @@ class TestCases:
     def __init__(self, verbose: bool, config: ConfigParser, console):
         self.verbose = verbose
         self.console = console
-        self.disable_map = Common.load_message_controls(config)
         self.agent_id = Common.load_agent_id(config)
-        self.rules = TestCaseRules(console, self.disable_map)
+        self.disable_map = Common.load_message_controls(config)
+        self.naming_conventions = Common.load_naming_conventions(config)
         self.tag_filter = self.load_tag_filter(config)
         self.display_name_filter = self.load_display_name_filter(config)
-        # self.intent_map_for_tcs = None
+
+        self.rules = TestCaseRules(console, self.disable_map)
 
     @staticmethod
     def load_tag_filter(config: ConfigParser) -> Dict[str, str]:
@@ -243,10 +244,6 @@ class TestCases:
         stats = LintStats()
 
         test_case_paths = self.build_test_case_path_list(agent_local_path)
-        # stats.total_test_cases = len(test_case_paths)
-
-        # self.intent_map_for_tcs = self.get_test_case_intent_data(
-        # agent_local_path)
 
         # Linting Starts Here
         for test_case in test_case_paths:
@@ -255,6 +252,8 @@ class TestCases:
             tc.agent_id = self.agent_id
             tc.dir_path = test_case
             tc.agent_path = agent_local_path
+            tc.naming_pattern = self.naming_conventions.get(
+                "test_case_name", None)
             stats = self.lint_test_case(tc, stats)
 
         header = "-" * 20
