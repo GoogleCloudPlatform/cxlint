@@ -109,7 +109,7 @@ class EntityTypeRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     # naming-conventions
     def entity_type_naming_convention(
         self,

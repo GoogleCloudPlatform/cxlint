@@ -38,7 +38,7 @@ class Common:
         data = dict(config.items("NAMING CONVENTIONS"))
 
         for key, value in data.items():
-            if value == '':
+            if value == "":
                 data[key] = None
 
         return data
@@ -206,7 +206,7 @@ class Common:
             "testCases": False,
             "webhooks": False
         }
-        
+
         if "agent.json" in os.listdir(agent_local_path):
             resources["agents"] = True
 

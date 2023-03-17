@@ -31,7 +31,7 @@ class WebhookRules:
         self.console = console
         self.disable_map = disable_map
         self.log = RulesLogger(console=console)
-    
+
     # naming-conventions
     def webhook_naming_conventions(
         self, webhook: Webhook, stats: LintStats) -> LintStats:
@@ -55,7 +55,7 @@ class WebhookRules:
             stats.total_issues += 1
 
             self.log.generic_logger(resource, rule, message)
-        
+
         return stats
 
     def run_webhook_rules(

@@ -161,13 +161,15 @@ class CxLint:
             )
 
         return res
-    
-    def update_naming_conventions_config(self, section: str, styles: Dict[str, Dict]):
+
+    def update_naming_conventions_config(
+        self, section: str, styles: Dict[str, Dict]):
         """Update the Naming Conventions config based on user inputs."""
 
         for key, value in styles.items():
             if not isinstance(value, str):
-                raise TypeError("Naming Convention values must be type `string`")            
+                raise TypeError(
+                    "Naming Convention values must be type `string`")
 
             config.set(section, key, value)
 

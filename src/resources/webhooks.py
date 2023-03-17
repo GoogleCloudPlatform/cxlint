@@ -18,7 +18,6 @@ import json
 import os
 
 from configparser import ConfigParser
-from typing import List
 
 from common import Common
 from rules.webhooks import WebhookRules
@@ -49,7 +48,7 @@ class Webhooks:
             webhook_paths.append(webhook_file_path)
 
         return webhook_paths
-    
+
     @staticmethod
     def get_service_type(webhook: Webhook) -> str:
         """Get the type of Webhook Service that is cofigured."""
@@ -60,10 +59,10 @@ class Webhooks:
             webhook.service_type = "Other"
 
         return webhook.service_type
-    
+
     def lint_webhook(self, webhook: Webhook, stats: LintStats) -> LintStats:
         """Lint a single Webhook file."""
-        
+
         with open(webhook.dir_path, "r", encoding="UTF-8") as webhook_file:
             webhook.data = json.load(webhook_file)
             webhook.resource_id = webhook.data.get("name", None)
@@ -77,7 +76,6 @@ class Webhooks:
         stats = self.rules.run_webhook_rules(webhook, stats)
 
         return stats
-        
 
     def lint_webhooks_directory(self, agent_local_path: str):
         """Linting the top level Webhooks Dir in the JSON Package structure.
@@ -91,7 +89,7 @@ class Webhooks:
         stats = LintStats()
 
         # Create a list of all Webhook paths to iter through
-        webhook_paths = self.build_webhook_path_list(agent_local_path)        
+        webhook_paths = self.build_webhook_path_list(agent_local_path)
 
         # Linting Starts Here
         for webhook_path in webhook_paths:
@@ -101,7 +99,7 @@ class Webhooks:
             webhook.dir_path = webhook_path
             webhook.naming_pattern = self.naming_conventions.get(
                 "webhook_name", None)
-            
+
             stats = self.lint_webhook(webhook, stats)
 
         header = "-" * 20

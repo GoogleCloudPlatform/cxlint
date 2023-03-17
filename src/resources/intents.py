@@ -50,7 +50,7 @@ class Intents:
             "intent_confirmation_name")
         intent.naming_pattern_escalation = styles.get(
             "intent_escalation_name", None)
-        
+
         return intent
 
     @staticmethod
@@ -222,7 +222,7 @@ class Intents:
             intent.verbose = self.verbose
             intent.agent_id = self.agent_id
             intent.dir_path = intent_path
-            
+
             intent = self.load_naming_conventions(
                 intent, self.naming_conventions)
             stats = self.lint_intent(intent, stats)

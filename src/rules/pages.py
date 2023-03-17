@@ -52,7 +52,7 @@ class PageRules:
 
             message = ": Page Display Name does not meet the specified"\
                 f" Convention : {pattern}"
-            
+
             stats.total_issues += 1
 
             self.log.generic_logger(resource, rule, message)
@@ -65,7 +65,7 @@ class PageRules:
         """Check that the Page Display Name conform to naming conventions."""
 
         # Return early if Start Page
-        if page.display_name == 'Start Page':
+        if page.display_name == "Start Page":
             return stats
 
         # Form Pages
@@ -73,7 +73,7 @@ class PageRules:
             pattern = page.naming_pattern_form
             res = re.search(pattern, page.display_name)
             stats.total_inspected += 1
-            
+
             stats = self.check_and_log_naming(page, stats, res, pattern)
 
         # Webhook Pages
@@ -81,7 +81,7 @@ class PageRules:
             pattern = page.naming_pattern_webhook
             res = re.search(pattern, page.display_name)
             stats.total_inspected += 1
-            
+
             stats = self.check_and_log_naming(page, stats, res, pattern)
 
         # Generic Pages
@@ -89,7 +89,7 @@ class PageRules:
             pattern = page.naming_pattern_generic
             res = re.search(pattern, page.display_name)
             stats.total_inspected += 1
-            
+
             stats = self.check_and_log_naming(page, stats, res, pattern)
 
         return stats

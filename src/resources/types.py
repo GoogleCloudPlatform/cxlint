@@ -156,7 +156,7 @@ class EntityType:
     data: Dict[str, Any] = None
     dir_path: str = None  # Full Directory Path for this Entity Type
     display_name: str = None  # Entity Type Display Name
-    entities: Dict[str, Any] = field(default_factory=dict)  # Map of lang codes, entities, and values
+    entities: Dict[str, Any] = field(default_factory=dict)  # Map
     kind: str = None  # The kind of Entity Type represented
     naming_pattern: str = None
     resource_id: str = None

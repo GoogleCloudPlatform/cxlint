@@ -55,7 +55,7 @@ class TestCaseRules:
             stats.total_issues += 1
 
             self.log.generic_logger(resource, rule, message)
-        
+
         return stats
 
     # explicit-tps-in-test-cases

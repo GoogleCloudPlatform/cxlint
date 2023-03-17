@@ -41,7 +41,7 @@ class IntentRules:
             hid = True
 
         return hid
-    
+
     @staticmethod
     def check_if_confirmation_intent(tps: List[str]) -> bool:
         """Check if the Intent contains yes/no phrases for confirmation."""
@@ -53,7 +53,7 @@ class IntentRules:
             confirm = True
 
         return confirm
-    
+
     @staticmethod
     def check_if_escalation_intent(tps: List[str]) -> bool:
         """Check if the Intent contains escalation phrases."""
@@ -73,9 +73,9 @@ class IntentRules:
         # If the TP Part has more than 1 part, we need to extract and
         # concat the data into a single string
         if len(parts) > 1:
-            utterance = ''
+            utterance = ""
             for part in parts:
-                utterance += part.get("text", '')
+                utterance += part.get("text", "")
 
         # Otherwise, there's just 1 part so we can take it as-is
         else:
@@ -83,10 +83,11 @@ class IntentRules:
 
         return utterance
 
-    def gather_training_phrases(self, intent: Intent, lang_code: str) -> List[str]:
+    def gather_training_phrases(
+        self, intent: Intent, lang_code: str) -> List[str]:
         """Flatten the Training Phrase proto to a list of strings."""
         tps_flat = []
-        tps_original = intent.training_phrases.get(lang_code, None)['tps']
+        tps_original = intent.training_phrases.get(lang_code, None)["tps"]
 
         for tp in tps_original:
             parts = tp.get("parts", None)
@@ -94,7 +95,7 @@ class IntentRules:
             tps_flat.append(utterance)
 
         return tps_flat
-    
+
     def check_and_log_naming(
         self,
         intent: Intent,
@@ -113,14 +114,13 @@ class IntentRules:
 
             message = ": Intent Display Name does not meet the specified"\
                 f" Convention : {pattern}"
-            
+
             stats.total_issues += 1
 
             self.log.generic_logger(resource, rule, message)
 
         return stats
 
-    
     # naming-conventions
     def intent_naming_convention(
         self,
@@ -155,19 +155,19 @@ class IntentRules:
             pattern = intent.naming_pattern_escalation
             res = re.search(pattern, intent.display_name)
             stats.total_inspected += 1
-            
+
             stats = self.check_and_log_naming(intent, stats, res, pattern)
-        
+
         # Generic Intents
         elif intent.naming_pattern_generic:
             pattern = intent.naming_pattern_generic
             res = re.search(pattern, intent.display_name)
             stats.total_inspected += 1
-            
+
             stats = self.check_and_log_naming(intent, stats, res, pattern)
 
         return stats
-        
+
 
     # intent-missing-metadata
     def intent_missing_metadata(
