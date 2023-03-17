@@ -40,6 +40,7 @@ class RulesLogger:
                 "page": f"/flows/{resource.flow_id}"
                 f"/flow_creation?pageId={resource.page_id}",
                 "test_case": f"/testCases/{resource.test_case_id}",
+                "webhook": f"/webhooks/{resource.webhook_id}"
             }
 
             path = link_map.get(resource.resource_type, None)
