@@ -33,6 +33,17 @@ class Common:
     """Common methods and helper functions used throughout library."""
 
     @staticmethod
+    def load_naming_conventions(config: ConfigParser) -> Dict[str, str]:
+        """Loads the Naming Convention styles into a map."""
+        data = dict(config.items("NAMING CONVENTIONS"))
+
+        for key, value in data.items():
+            if value == '':
+                data[key] = None
+
+        return data
+
+    @staticmethod
     def load_message_controls(config: ConfigParser) -> Dict[str, str]:
         """Loads the config file for message control into a map."""
         msg_list = (
@@ -187,16 +198,25 @@ class Common:
         manipulation for resources that have 2 names to ensure we're checking
         everything appropriately."""
         resources = {
+            "agents": False,
             "flows": False,
             "entityTypes": False,
             "intents": False,
             "testCases": False,
             "webhooks": False
         }
+        
+        if "agent.json" in os.listdir(agent_local_path):
+            resources["agents"] = True
 
         # Ensure resource directories exist
         for resource, _ in resources.items():
-            if resource in os.listdir(agent_local_path):
+
+            # skip cause we handle this case outside loop
+            if resource == "agents":
+                pass
+
+            elif resource in os.listdir(agent_local_path):
                 resources[resource] = True
 
         # Clean up dict so we can use snake_case from here on
