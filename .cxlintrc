@@ -64,6 +64,7 @@ disable=
 #    unused-pages,
 #    dangling-pages,
 #    unreachable-pages
+#    naming-conventions
 
 
 # For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.
@@ -79,3 +80,41 @@ include=
 
 [TEST CASE DISPLAY NAME PATTERN]
 pattern=
+
+# We can enforce naming conventions and style guides for many resources by
+# defining the specific patterns that we'd like to check for. Each of the below
+# resource types and subtypes accepts a regex pattern that will be applied to
+# the resource display name to determine if it meets the naming convention
+# criteria.
+[NAMING CONVENTIONS]
+agent_name=
+
+entity_type_name=
+
+flow_name=
+
+page_with_form_name=
+
+page_with_webhook_name=
+
+# If provided, we will use this pattern to inspect _all_ intents.
+intent_generic_name=
+
+# We determine head intents based on either of these being present:
+#  1. Intent Display name contains word 'head'
+#  2. Intent Tags contain key 'head'
+intent_head_name=
+
+# We determine confirmation intents based on either of the following:
+#  1. Intent Training Phrases contain 'yes'
+#  2. Intent Training Phrases contain 'no'
+intent_confirmation_name=
+
+# We determine escalation intents based on either of the following:
+#  1. Intent Training Phrases contain 'escalate'
+#  2. Intent Training Phrases contain 'operator'
+intent_escalation_name=
+
+test_case_name=
+
+webhook_name=
