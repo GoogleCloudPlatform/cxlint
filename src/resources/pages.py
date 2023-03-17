@@ -33,11 +33,22 @@ class Pages:
         self.verbose = verbose
         self.console = console
         self.config = config
+        self.agent_id = Common.load_agent_id(config)
         self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
-        self.agent_id = Common.load_agent_id(config)
+        self.naming_conventions = Common.load_naming_conventions(config)
         self.rules = PageRules(console, self.disable_map)
         self.routes = Fulfillments(verbose, config, console)
+
+    @staticmethod
+    def load_naming_conventions(page: Page, styles: Dict[str, str]):
+        """Load all Page naming conventions to the current object."""
+        page.naming_pattern_generic = styles.get("page_generic_name", None)
+        page.naming_pattern_form = styles.get("page_with_form_name", None)
+        page.naming_pattern_webhook = styles.get(
+            "page_with_webhook_name", None)
+
+        return page
 
     @staticmethod
     def build_page_path_list(flow_path: str):
@@ -142,6 +153,10 @@ class Pages:
                 page = Page(flow=flow)
                 page.agent_id = flow.agent_id
                 page.page_file = page_path
+
+                page = self.load_naming_conventions(
+                    page, self.naming_conventions)
+
                 stats.total_pages += 1
                 stats = self.lint_page(page, stats)
 
