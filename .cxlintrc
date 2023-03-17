@@ -87,14 +87,26 @@ pattern=
 # the resource display name to determine if it meets the naming convention
 # criteria.
 [NAMING CONVENTIONS]
+
+# Implementation of Agent Name is currently inactive due to the underlying
+# Agent Metadata file not including the Agent Display Name.
 agent_name=
 
+# We are explicitly checking the Entity Type Display Name only.
 entity_type_name=
 
 flow_name=
 
+# If provided and Page does not match Form or Webhook type, we will use this
+# pattern to check _all_ remaining pages.
+page_generic_name=
+
+# If we determine that a Page contains a Form, we will use this pattern
+# to check against the Page Name.
 page_with_form_name=
 
+# If we determine that a Page contains a Webhook, we will use this pattern
+# to check against the Page Name.
 page_with_webhook_name=
 
 # If provided, we will use this pattern to inspect _all_ intents.
