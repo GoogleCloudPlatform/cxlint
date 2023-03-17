@@ -14,6 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
 from typing import Dict, Any
 from resources.types import Flow, LintStats, Resource
 
@@ -29,6 +31,36 @@ class FlowRules:
         self.console = console
         self.disable_map = disable_map
         self.log = RulesLogger(console=console)
+
+    # naming-conventions
+    def flow_naming_convention(
+            self,
+            flow: Flow,
+            stats: LintStats) -> LintStats:
+        """Check that the Flow Display Name conforms to naming conventions."""
+        rule = "R015: Naming Conventions"
+
+        if flow.naming_pattern:
+            res = re.search(flow.naming_pattern, flow.display_name)
+
+            stats.total_inspected += 1
+
+        if not res:
+            resource = Resource()
+            resource.agent_id = flow.agent_id
+            resource.flow_display_name = flow.display_name
+            resource.flow_id = flow.resource_id
+            resource.page_display_name = None
+            resource.page_id = None
+            resource.resource_type = "flow"
+
+            message = ": Flow Display Name does not meet the specified Naming"\
+                  f" Convention : {flow.naming_pattern}"
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
 
     # unused-pages
     def unused_pages(self, flow: Flow, stats: LintStats) -> LintStats:
@@ -98,6 +130,10 @@ class FlowRules:
 
     def run_flow_rules(self, flow: Flow, stats: LintStats) -> LintStats:
         """Checks and Executes all Flow level rules."""
+        # naming-conventions
+        if self.disable_map.get("naming-conventions", True):
+            stats = self.flow_naming_convention(flow, stats)
+
         # unused-pages
         if self.disable_map.get("unused-pages", True):
             stats = self.unused_pages(flow, stats)

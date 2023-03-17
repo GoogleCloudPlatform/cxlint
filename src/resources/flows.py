@@ -38,9 +38,10 @@ class Flows:
         self.verbose = verbose
         self.console = console
         self.config = config
+        self.agent_id = Common.load_agent_id(config)
         self.agent_type = Common.load_agent_type(config)
         self.disable_map = Common.load_message_controls(config)
-        self.agent_id = Common.load_agent_id(config)
+        self.naming_conventions = Common.load_naming_conventions(config)
         self.include_filter = self.load_include_filter(config)
         self.exclude_filter = self.load_exclude_filter(config)
         self.special_pages = [
@@ -347,6 +348,7 @@ class Flows:
             flow.verbose = self.verbose
             flow.agent_id = self.agent_id
             flow.dir_path = flow_path
+            flow.naming_pattern = self.naming_conventions.get("flow_name", None)
             stats = self.lint_flow(flow, stats)
 
         header = "-" * 20
