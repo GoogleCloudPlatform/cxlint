@@ -215,7 +215,6 @@ class Intents:
 
         # Create a list of all Intent paths to iter through
         intent_paths = self.build_intent_path_list(agent_local_path)
-        # stats.total_intents = len(intent_paths)
 
         # Linting Starts Here
         for intent_path in intent_paths:
