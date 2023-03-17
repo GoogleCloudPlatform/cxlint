@@ -21,11 +21,12 @@ import logging
 from rich.console import Console
 from rich.logging import RichHandler
 
-from typing import List, Any, Union
+from typing import List, Any, Union, Dict
 
 from common import Common
 from gcs_utils import GcsUtils
 
+from resources.agents import Agents
 from resources.flows import Flows
 from resources.entity_types import EntityTypes
 from resources.intents import Intents
@@ -81,6 +82,7 @@ class CxLint:
         flow_exclude_list: List[str] = None,
         language_code: Union[List[str], str] = None,
         load_gcs: bool = False,
+        naming_conventions: Dict[str, str] = None,
         output_file: str = None,
         resource_filter: Union[List[str], str] = None,
         test_case_pattern: str = None,
@@ -90,6 +92,30 @@ class CxLint:
         if load_gcs:
             self.gcs = GcsUtils()
 
+        if agent_id:
+            self.update_config("AGENT ID", agent_id)
+
+        if agent_type:
+            self.update_config("AGENT TYPE", agent_type)
+
+        if flow_include_list or flow_exclude_list:
+            self.update_flows_config(flow_include_list, flow_exclude_list)
+
+        if intent_exclude_pattern or intent_include_pattern:
+            self.update_intent_config(
+                intent_include_pattern, intent_exclude_pattern
+            )
+
+        if language_code:
+            self.update_config("INTENTS", language_code)
+
+        if naming_conventions:
+            self.update_naming_conventions_config(
+                "NAMING CONVENTIONS", naming_conventions)
+
+        if resource_filter:
+            self.update_config("AGENT RESOURCES", resource_filter)
+
         if test_case_pattern:
             self.update_config(
                 "TEST CASE DISPLAY NAME PATTERN", test_case_pattern
@@ -98,29 +124,10 @@ class CxLint:
         if test_case_tags:
             self.update_config("TEST CASE TAGS", test_case_tags)
 
-        if agent_id:
-            self.update_config("AGENT ID", agent_id)
-
-        if agent_type:
-            self.update_config("AGENT TYPE", agent_type)
-
-        if intent_exclude_pattern or intent_include_pattern:
-            self.update_intent_config(
-                intent_include_pattern, intent_exclude_pattern
-            )
-
-        if flow_include_list or flow_exclude_list:
-            self.update_flows_config(flow_include_list, flow_exclude_list)
-
-        if resource_filter:
-            self.update_config("AGENT RESOURCES", resource_filter)
-
-        if language_code:
-            self.update_config("INTENTS", language_code)
-
         self.resource_filter = Common.load_resource_filter(config)
         self.output_file = output_file
 
+        self.agents = Agents(verbose, config, console)
         self.entity_types = EntityTypes(verbose, config, console)
         self.intents = Intents(verbose, config, console)
         self.flows = Flows(verbose, config, console)
@@ -152,6 +159,16 @@ class CxLint:
             )
 
         return res
+    
+    def update_naming_conventions_config(self, section: str, styles: Dict[str, Dict]):
+        """Update the Naming Conventions config based on user inputs."""
+
+        for key, value in styles.items():
+            if not isinstance(value, str):
+                raise TypeError("Naming Convention values must be type `string`")            
+
+            config.set(section, key, value)
+
 
     def update_flows_config(self, include_pattern: str, exclude_pattern: str):
         """Handle updates to the Flow include/exclude lists."""
@@ -204,6 +221,9 @@ class CxLint:
         console.log(start_message)
         resources = Common.resource_precheck(
             agent_local_path, self.resource_filter)
+
+        if resources["agents"]:
+            self.agents.lint_agents_metadata(agent_local_path)
 
         if resources["flows"]:
             self.flows.lint_flows_directory(agent_local_path)
