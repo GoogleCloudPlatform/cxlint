@@ -67,9 +67,11 @@ class Webhooks:
             webhook.data = json.load(webhook_file)
             webhook.resource_id = webhook.data.get("name", None)
             webhook.display_name = webhook.data.get("displayName", None)
-            webhook.timeout = webhook.data.get(
-                "timeout", None).get("seconds", None)
             webhook.service_type = self.get_service_type(webhook)
+
+            timeout_dict = webhook.data.get("timeout", None)
+            if timeout_dict:
+                webhook.timeout = timeout_dict.get("seconds", None)
 
             webhook_file.close()
 
@@ -100,6 +102,7 @@ class Webhooks:
             webhook.naming_pattern = self.naming_conventions.get(
                 "webhook_name", None)
 
+            stats.total_webhooks += 1
             stats = self.lint_webhook(webhook, stats)
 
         header = "-" * 20
@@ -108,7 +111,7 @@ class Webhooks:
         )
 
         end_message = (
-            f"\n{header}\n{stats.total_intents} Webhooks linted."
+            f"\n{header}\n{stats.total_webhooks} Webhooks linted."
             f"\n{stats.total_issues} issues found out of "
             f"{stats.total_inspected} inspected."
             f"\nYour Agent Webhooks rated at {rating:.2f}/10\n\n"
