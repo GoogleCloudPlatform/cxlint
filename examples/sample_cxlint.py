@@ -20,6 +20,7 @@ from cxlint import CxLint
 
 if __name__ == "__main__":
     agent_local_path = 'local_path/to/your/agent_files'
+    gcs_path = "gs://sample_bucket/agent.zip"
     agent_id = '<AGENT_ID' # optional AGENT_ID used for deep-linked logs
 
     naming_conventions = {
@@ -36,7 +37,7 @@ if __name__ == "__main__":
         "webhook_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$"
         }
 
-
+    # Instantiating Linter Class and input args
     cxlint = CxLint(
         agent_id=agent_id,
         naming_conventions=naming_conventions,
@@ -49,4 +50,9 @@ if __name__ == "__main__":
         output_file="/Users/pmarlow/eng/cxlint/data/logs.txt",
     )
 
+    # Downloading GCS files and unzipping locally
+    agent_file = cxlint.gcs.download_gcs(gcs_path, agent_local_path)
+    cxlint.gcs.unzip(agent_file, agent_local_path)
+
+    # Running Linter
     cxlint.lint_agent(agent_local_path)
