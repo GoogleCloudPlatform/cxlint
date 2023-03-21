@@ -1,4 +1,6 @@
-"""Example Python file to run as part of an External Pipeline."""
+# pylint: skip-file
+
+"""Testing"""
 
 # Copyright 2023 Google LLC
 #
@@ -16,22 +18,35 @@
 
 from cxlint import CxLint
 
-if __name__ == '__main__':
-    AGENT_LOCAL_PATH = 'local_path/to/your/agent_files'
-    AGENT_ID = '<AGENT_ID' # optional AGENT_ID used for deep-linked logs
+if __name__ == "__main__":
+    agent_local_path = 'local_path/to/your/agent_files'
+    agent_id = '<AGENT_ID' # optional AGENT_ID used for deep-linked logs
 
-    # Each of the keyword args for CxLint can also be set using the .cxlintrc
-    # config file keyword args provided at runtime will override config file
-    # entries.
+    naming_conventions = {
+        "flow_name": "^[A-Z][a-z]*( [A-Z][a-z]*)*$",
+        "intent_head_name": "head_intent.*",
+        "intent_confirmation_name": "confirmation.*",
+        "intent_escalation_name": "escalate.*",
+        "intent_generic_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
+        "entity_type_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
+        "page_generic_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
+        "page_with_form_name": "^> collect.*",
+        "page_with_webhook_name": "^> webhook.*",
+        "test_case_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
+        "webhook_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$"
+        }
+
 
     cxlint = CxLint(
-        agent_id=AGENT_ID,
+        agent_id=agent_id,
+        naming_conventions=naming_conventions,
+        load_gcs=False,
         # agent_type='chat',
         # language_code=['en'],
-        # resource_filter=["flows", "entity_types"],
+        # resource_filter=["flows", "entity_types", "webhooks", "intents"],
         # flow_include_list=['Steering'],
         # intent_include_pattern='sup'
-        output_file='logs.txt',
+        output_file="/Users/pmarlow/eng/cxlint/data/logs.txt",
     )
 
-    cxlint.lint_agent(AGENT_LOCAL_PATH)
+    cxlint.lint_agent(agent_local_path)
