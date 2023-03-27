@@ -258,6 +258,36 @@ class IntentRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
+    
+    # extra-display-name-whitespace
+    def intent_display_name_extra_whitespaces(
+        self,
+        intent: Intent,
+        lang_code: str,
+        stats: LintStats) -> LintStats:
+        """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
+        rule = "R016: Extra Whitespace in Display Name"
+        
+        stats.total_inspected += 1
+
+        res = bool(intent.display_name.startswith(" ") or
+                   intent.display_name.endswith(" ") or
+                   re.search('\s{2,}', intent.display_name))
+        
+        if res :
+            resource = Resource()
+            resource.agent_id = intent.agent_id
+            resource.intent_display_name = intent.display_name
+            resource.intent_id = intent.resource_id
+            resource.resource_type = "intent"
+
+            message = ''
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
+
 
     def run_training_phrase_rules(
         self,
@@ -277,5 +307,10 @@ class IntentRules:
         # intent-min-tps
         if self.disable_map.get("intent-min-tps", True):
             stats = self.min_tps_head_intent(intent, lang_code, stats)
+        
+        # extra-display-name-whitespace
+        if self.disable_map.get("extra-display-name-whitespace", True):
+            stats = self.intent_display_name_extra_whitespaces(intent,lang_code,stats)
+
 
         return stats

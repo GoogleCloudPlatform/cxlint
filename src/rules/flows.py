@@ -127,6 +127,36 @@ class FlowRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
+    
+    # extra-display-name-whitespace
+    def flow_display_name_extra_whitespaces(
+        self,
+        flow: Flow,
+        stats: LintStats) -> LintStats:
+        """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
+        rule = "R016: Extra Whitespace in Display Name"
+
+        res = bool(flow.display_name.startswith(" ") or
+                   flow.display_name.endswith(" ") or
+                   re.search('\s{2,}', flow.display_name))
+        
+        if res :
+            resource = Resource()
+            resource.agent_id = flow.agent_id
+            resource.flow_display_name = flow.display_name
+            resource.flow_id = flow.resource_id
+            resource.page_display_name = None
+            resource.page_id = None
+            resource.resource_type = "flow"
+
+            message = ''
+            stats.total_issues += 1
+            stats.total_inspected += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
+
 
     def run_flow_rules(self, flow: Flow, stats: LintStats) -> LintStats:
         """Checks and Executes all Flow level rules."""
@@ -145,5 +175,10 @@ class FlowRules:
         # unreachable-pages
         if self.disable_map.get("unreachable-pages", True):
             stats = self.unreachable_pages(flow, stats)
+        
+        # extra-display-name-whitespace
+        if self.disable_map.get("extra-display-name-whitespace", True):
+            stats = self.flow_display_name_extra_whitespaces(flow, stats)
+
 
         return stats

@@ -144,8 +144,10 @@ class EntityTypeRules:
         etype: EntityType,
         stats: LintStats) -> LintStats:
         """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
-        rule = "R016: Whitespaces"
+        rule = "R016: Extra Whitespace in Display Name"
 
+        stats.total_inspected += 1
+        
         res = bool(etype.display_name.startswith(" ") or
                    etype.display_name.endswith(" ") or
                    re.search('\s{2,}', etype.display_name))
@@ -157,7 +159,7 @@ class EntityTypeRules:
             resource.entity_type_id = etype.resource_id
             resource.resource_type = "entity_type"
 
-            message = ": Display Name contains (leading | trailing | consecutive) whitespace character."
+            message = ''
             stats.total_issues += 1
 
             self.log.generic_logger(resource, rule, message)
