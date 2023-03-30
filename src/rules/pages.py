@@ -147,7 +147,37 @@ class PageRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
+    
+    # page-form-no-match-handler
+    def page_form_parameters(
+        self, page: Page, stats: LintStats) -> LintStats:
+        """Check that the Page has a form and all parameters have no-match handlers"""
+        rule = "R0: Page form no-match handler"
+        
+        stats.total_inspected += 1
+        
+        res = False
+        
+        if page.form:
+            for parameter in page.form['parameters']:
+                res = [x for x in parameter['fillBehavior']['repromptEventHandlers'] if x['event'] in ['sys.no-match-default','sys.no-match-1"']]  
+        
+        if res :
+            resource = Resource()
+            resource.agent_id = page.agent_id
+            resource.flow_display_name = page.flow.display_name
+            resource.flow_id = page.flow.resource_id
+            resource.page_display_name = page.display_name
+            resource.page_id = page.resource_id
+            resource.resource_type = "page"
 
+            message = ''
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
+       
 
     def run_page_rules(self, page: Page, stats: LintStats):
         """Checks and Executes all Page level rules."""
