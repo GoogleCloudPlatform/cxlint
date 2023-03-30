@@ -149,7 +149,7 @@ class PageRules:
         return stats
     
     # page-form-no-match-handler
-    def page_form_parameters(
+    def page_form_no_match_handler(
         self, page: Page, stats: LintStats) -> LintStats:
         """Check that the Page has a form and all parameters have no-match handlers"""
         rule = "R017: Missing NO_MATCH Handlers on Form"
@@ -177,6 +177,37 @@ class PageRules:
                 self.log.generic_logger(resource, rule, message)
 
         return stats
+    
+    # page-form-no-input-handler
+    def page_form_no_input_handler(
+        self, page: Page, stats: LintStats) -> LintStats:
+        """Check that the Page has a form and all parameters have no-input handlers"""
+        rule = "R018: Missing NO_INPUT Handlers on Form"
+        
+        stats.total_inspected += 1
+        
+        res = False
+        
+        if page.form:
+            for parameter in page.form['parameters']:
+                res = [x for x in parameter['fillBehavior']['repromptEventHandlers'] if x['event'] in ['sys.no-input-default','sys.no-input-1"']]  
+        
+            if not res :
+                resource = Resource()
+                resource.agent_id = page.agent_id
+                resource.flow_display_name = page.flow.display_name
+                resource.flow_id = page.flow.resource_id
+                resource.page_display_name = page.display_name
+                resource.page_id = page.resource_id
+                resource.resource_type = "page"
+
+                message = ''
+                stats.total_issues += 1
+
+                self.log.generic_logger(resource, rule, message)
+
+        return stats
+
        
 
     def run_page_rules(self, page: Page, stats: LintStats):

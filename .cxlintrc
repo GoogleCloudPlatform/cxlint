@@ -67,6 +67,8 @@ disable=
 #    naming-conventions
 #    extra-display-name-whitespace
 #    page-form-no-match-handler
+#    page-form-no-input-handler
+
 
 
 
