@@ -24,30 +24,31 @@ if __name__ == "__main__":
     agent_id = '<AGENT_ID' # optional AGENT_ID used for deep-linked logs
 
     naming_conventions = {
-        "flow_name": "^[A-Z][a-z]*( [A-Z][a-z]*)*$",
+        "agent_name": ".*",
+        "flow_name": ".*",
         "intent_head_name": "head_intent.*",
-        "intent_confirmation_name": "confirmation.*",
-        "intent_escalation_name": "escalate.*",
-        "intent_generic_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
-        "entity_type_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
-        "page_generic_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
-        "page_with_form_name": "^> collect.*",
-        "page_with_webhook_name": "^> webhook.*",
-        "test_case_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$",
-        "webhook_name": "^\w+(-?\w+)*(\s+\w+(-?\w+)*)*$"
+        "intent_confirmation_name": ".*",
+        "intent_escalation_name": ".*",
+        "intent_generic_name": ".*",
+        "entity_type_name": ".*",
+        "page_generic_name": ".*",
+        "page_with_form_name": ".*",
+        "page_with_webhook_name": ".*",
+        "test_case_name": ".*",
+        "webhook_name": ".*"
         }
 
     # Instantiating Linter Class and input args
     cxlint = CxLint(
         agent_id=agent_id,
         naming_conventions=naming_conventions,
-        load_gcs=False,
+        load_gcs=True,
         # agent_type='chat',
         # language_code=['en'],
         # resource_filter=["flows", "entity_types", "webhooks", "intents"],
         # flow_include_list=['Steering'],
         # intent_include_pattern='sup'
-        output_file="/Users/pmarlow/eng/cxlint/data/logs.txt",
+        output_file="logs.txt",
     )
 
     # Downloading GCS files and unzipping locally
