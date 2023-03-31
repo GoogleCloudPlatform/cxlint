@@ -127,7 +127,7 @@ class FlowRules:
             self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     # extra-display-name-whitespace
     def flow_display_name_extra_whitespaces(
         self,
@@ -138,8 +138,8 @@ class FlowRules:
 
         res = bool(flow.display_name.startswith(" ") or
                    flow.display_name.endswith(" ") or
-                   re.search('\s{2,}', flow.display_name))
-        
+                   re.search(r"\s{2,}", flow.display_name))
+
         if res :
             resource = Resource()
             resource.agent_id = flow.agent_id
@@ -149,7 +149,7 @@ class FlowRules:
             resource.page_id = None
             resource.resource_type = "flow"
 
-            message = ''
+            message = ""
             stats.total_issues += 1
             stats.total_inspected += 1
 
@@ -175,7 +175,7 @@ class FlowRules:
         # unreachable-pages
         if self.disable_map.get("unreachable-pages", True):
             stats = self.unreachable_pages(flow, stats)
-        
+
         # extra-display-name-whitespace
         if self.disable_map.get("extra-display-name-whitespace", True):
             stats = self.flow_display_name_extra_whitespaces(flow, stats)

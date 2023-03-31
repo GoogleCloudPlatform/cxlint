@@ -35,13 +35,13 @@ class PageRules:
     @staticmethod
     def _gather_params_and_handlers(parameter):
         """Check to see if Reprompt Event Handlers exist."""
-        fill = parameter.get('fillBehavior', None)
+        fill = parameter.get("fillBehavior", None)
         if fill:
-            handlers = fill.get('repromptEventHandlers', [])
+            handlers = fill.get("repromptEventHandlers", [])
 
         param_handler = {
-            'display_name': parameter.get('displayName', None),
-            'handlers': handlers
+            "display_name": parameter.get("displayName", None),
+            "handlers": handlers
         }
 
         return param_handler
@@ -139,13 +139,13 @@ class PageRules:
         stats: LintStats) -> LintStats:
         """Check Page display name for extra whitespace characters."""
         rule = "R016: Extra Whitespace in Display Name"
-        
+
         stats.total_inspected += 1
 
         res = bool(page.display_name.startswith(" ") or
                    page.display_name.endswith(" ") or
-                   re.search('\s{2,}', page.display_name))
-        
+                   re.search(r"\s{2,}", page.display_name))
+
         if res :
             resource = Resource()
             resource.agent_id = page.agent_id
@@ -155,29 +155,29 @@ class PageRules:
             resource.page_id = page.resource_id
             resource.resource_type = "page"
 
-            message = ''
+            message = ""
             stats.total_issues += 1
 
             self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     # page-form-no-match-handler
     def page_form_no_match_handler(
         self, page: Page, stats: LintStats) -> LintStats:
-        """Check that the Page has a form and all parameters have no-match handlers"""
+        """Check Page Form Parameters for NO_MATCH handlers."""
         rule = "R017: Missing NO_MATCH Handlers on Form"
-        
+
         stats.total_inspected += 1
-        
+
         params = []
 
         if page.form:
-            for parameter in page.form['parameters']:
+            for parameter in page.form["parameters"]:
                 params.append(self._gather_params_and_handlers(parameter))
 
         for param in params:
-            if not param.get('handlers', None):
+            if not param.get("handlers", None):
                 resource = Resource()
                 resource.agent_id = page.agent_id
                 resource.flow_display_name = page.flow.display_name
@@ -192,23 +192,23 @@ class PageRules:
                 self.log.generic_logger(resource, rule, message)
 
         return stats
-    
+
     # page-form-no-input-handler
     def page_form_no_input_handler(
         self, page: Page, stats: LintStats) -> LintStats:
         """Check Page Form Parameters for NO_INPUT handlers."""
         rule = "R018: Missing NO_INPUT Handlers on Form"
-        
+
         stats.total_inspected += 1
-        
+
         params = []
-        
+
         if page.form:
-            for parameter in page.form['parameters']:
+            for parameter in page.form["parameters"]:
                 params.append(self._gather_params_and_handlers(parameter))
-        
+
         for param in params:
-            if not param.get('handlers', None):
+            if not param.get("handlers", None):
                 resource = Resource()
                 resource.agent_id = page.agent_id
                 resource.flow_display_name = page.flow.display_name
@@ -223,8 +223,6 @@ class PageRules:
                 self.log.generic_logger(resource, rule, message)
 
         return stats
-
-       
 
     def run_page_rules(self, page: Page, stats: LintStats):
         """Checks and Executes all Page level rules."""
