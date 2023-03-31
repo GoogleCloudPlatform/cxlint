@@ -118,6 +118,37 @@ class PageRules:
 
         return stats
 
+    # extra-display-name-whitespace
+    def page_display_name_extra_whitespaces(
+        self,
+        page: Page,
+        stats: LintStats) -> LintStats:
+        """Check Page display name for extra whitespace characters."""
+        rule = "R016: Extra Whitespace in Display Name"
+        
+        stats.total_inspected += 1
+
+        res = bool(page.display_name.startswith(" ") or
+                   page.display_name.endswith(" ") or
+                   re.search('\s{2,}', page.display_name))
+        
+        if res :
+            resource = Resource()
+            resource.agent_id = page.agent_id
+            resource.flow_display_name = page.flow.display_name
+            resource.flow_id = page.flow.resource_id
+            resource.page_display_name = page.display_name
+            resource.page_id = page.resource_id
+            resource.resource_type = "page"
+
+            message = ''
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
+
+
     def run_page_rules(self, page: Page, stats: LintStats):
         """Checks and Executes all Page level rules."""
         # naming-conventions
@@ -127,5 +158,9 @@ class PageRules:
         # missing-webhook-event-handlers
         if self.disable_map.get("missing-webhook-event-handlers", True):
             stats = self.missing_webhook_event_handlers(page, stats)
+
+        # extra-display-name-whitespace
+        if self.disable_map.get("extra-display-name-whitespace", True):
+            stats = self.page_display_name_extra_whitespaces(page, stats)
 
         return stats

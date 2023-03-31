@@ -65,6 +65,7 @@ disable=
 #    dangling-pages,
 #    unreachable-pages
 #    naming-conventions
+#    extra-display-name-whitespace
 
 
 # For Test Case Tags, you will need to EXCLUDE the `#` preceeding the tag name.

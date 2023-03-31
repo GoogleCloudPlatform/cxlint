@@ -138,6 +138,34 @@ class EntityTypeRules:
 
         return stats
 
+    # extra-display-name-whitespace
+    def entity_display_name_extra_whitespaces(
+        self,
+        etype: EntityType,
+        stats: LintStats) -> LintStats:
+        """Check Entity display name for extra whitespace characters."""
+        rule = "R016: Extra Whitespace in Display Name"
+
+        stats.total_inspected += 1
+        
+        res = bool(etype.display_name.startswith(" ") or
+                   etype.display_name.endswith(" ") or
+                   re.search('\s{2,}', etype.display_name))
+        
+        if res :
+            resource = Resource()
+            resource.agent_id = etype.agent_id
+            resource.entity_type_display_name = etype.display_name
+            resource.entity_type_id = etype.resource_id
+            resource.resource_type = "entity_type"
+
+            message = ''
+            stats.total_issues += 1
+
+            self.log.generic_logger(resource, rule, message)
+
+        return stats
+
     # yes-no-entities
     def yes_no_entities(
         self,
@@ -169,5 +197,9 @@ class EntityTypeRules:
         # yes-no-entities
         if self.disable_map.get("yes-no-entities", True):
             stats = self.yes_no_entities(etype, lang_code, stats)
+        
+        # extra-display-name-whitespace
+        if self.disable_map.get("extra-display-name-whitespace", True):
+            stats = self.entity_display_name_extra_whitespaces(etype, stats)
 
         return stats
