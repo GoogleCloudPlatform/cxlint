@@ -263,9 +263,8 @@ class IntentRules:
     def intent_display_name_extra_whitespaces(
         self,
         intent: Intent,
-        lang_code: str,
         stats: LintStats) -> LintStats:
-        """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
+        """Check Intent display name for extra whitespace characters."""
         rule = "R016: Extra Whitespace in Display Name"
         
         stats.total_inspected += 1
@@ -310,7 +309,6 @@ class IntentRules:
         
         # extra-display-name-whitespace
         if self.disable_map.get("extra-display-name-whitespace", True):
-            stats = self.intent_display_name_extra_whitespaces(intent,lang_code,stats)
-
+            stats = self.intent_display_name_extra_whitespaces(intent, stats)
 
         return stats

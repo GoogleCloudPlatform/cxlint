@@ -143,7 +143,7 @@ class EntityTypeRules:
         self,
         etype: EntityType,
         stats: LintStats) -> LintStats:
-        """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
+        """Check Entity display name for extra whitespace characters."""
         rule = "R016: Extra Whitespace in Display Name"
 
         stats.total_inspected += 1

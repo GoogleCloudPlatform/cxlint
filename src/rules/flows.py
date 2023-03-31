@@ -133,7 +133,7 @@ class FlowRules:
         self,
         flow: Flow,
         stats: LintStats) -> LintStats:
-        """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
+        """Check Flow display name for extra whitespace characters."""
         rule = "R016: Extra Whitespace in Display Name"
 
         res = bool(flow.display_name.startswith(" ") or

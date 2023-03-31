@@ -123,7 +123,7 @@ class PageRules:
         self,
         page: Page,
         stats: LintStats) -> LintStats:
-        """Check that the Entity display name has leading, trailing, consecutive whitspace character"""
+        """Check Page display name for extra whitespace characters."""
         rule = "R016: Extra Whitespace in Display Name"
         
         stats.total_inspected += 1
@@ -161,6 +161,6 @@ class PageRules:
 
         # extra-display-name-whitespace
         if self.disable_map.get("extra-display-name-whitespace", True):
-            stats = self.page_display_name_extra_whitespaces(page,stats)
+            stats = self.page_display_name_extra_whitespaces(page, stats)
 
         return stats
