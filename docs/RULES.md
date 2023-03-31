@@ -17,11 +17,15 @@
 | R013 | [Dangling Pages](#dangling-pages) | Pages |
 | R014 | [Unreachable Pages](#unreachable-pages) | Pages |
 | R015 | [Naming Conventions](#naming-conventions) | All Resource Display Names |
+| R016 | [Leading / Trailing Whitespace](#leading--trailing-whitespace) | All Resource Display Names |
+| R017 | [No-Match Handlers on Forms](#no-match-handlers-on-forms) | All Resource Display Names |
+| R018 | [No-Input Handlers on Forms](#no-input-handlers-on-forms) | All Resource Display Names |
 
 <br>
 <br>
 
-# Naming Conventions
+# Generic Rules
+### Naming Conventions
 _**Rule: If the inspected resource display name does not match the provided Naming Convention pattern, raise a warning.**_
 
 Also known as _**Style Guide**_ enforcement, a set of naming conventions can be provided to the Linter to inspect the style of the resource display name.  
@@ -53,6 +57,16 @@ Below are the current naming conventions that can be provided for the various re
     2. Intent Training Phrases contain 'operator'
 - test_case_name 
 - webhook_name
+
+___
+
+### Leading / Trailing Whitespace
+_**Rule: If any Resource Display Name contains leading, trailing, or double whitespace characters, trigger a warning.**_
+
+While extra whitespace characters are not deterimental to the bot building experience in the console/UI, it can cause issues when parsing data via API.  
+As a best practice, it's good to keep the display names for all resources free of these extra spaces.
+
+___
 
 <br> 
 
@@ -129,6 +143,30 @@ So, we’ll write them like this:
   - Bot:	Do you know your travel dates? _(first time asking this question)_
   - User:	`[noise/ambiguous/unclear]`
   - Bot:	Sorry, do you know when you are traveling`?` _(clarifying question)_
+___
+
+### No-Match Handlers on Forms
+_**Rule: If a page contains a Form that collects Parameters and is missing Parameter specific NO_MATCH handlers, trigger a warning.**_
+
+As a best practice for bot building, developers should create context specific handlers for their parameter collection.  
+For example, if you are collecting an email address, consider these two handler responses:
+
+* GENERIC: "I'm sorry, I didn't understand you."
+* CONTEXT SPECIFIC: "I'm sorry, I wasn't able to capture your email address, please try saying it again."
+
+With context specific reprompt event handlers, we can keep the user engaged with the specific piece of data we are trying to collect.
+___
+
+### No-Input Handlers on Forms
+_**Rule: If a page contains a Form that collects Parameters and is missing Parameter specific NO_INPUT handlers, trigger a warning.**_
+
+As a best practice for bot building, developers should create context specific handlers for their parameter collection.  
+For example, if you are collecting an email address, consider these two handler responses:
+
+* GENERIC: "I'm sorry, I didn't hear you."
+* CONTEXT SPECIFIC: "I'm having trouble hearing you. Please say your email address again."
+
+With context specific reprompt event handlers, we can keep the user engaged with the specific piece of data we are trying to collect.
 ___
 
 <br>
