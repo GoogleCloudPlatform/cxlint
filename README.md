@@ -53,6 +53,11 @@ project_id = '<YOUR_GCP_PROJECT_ID>'
 
 After running the above, Colab will pick up your credentials from the environment. No need to use Service Account keys!
 
+# Rules
+
+Curent [list of rules](docs/RULES.md) that are being implemented for CX Linter.<br>
+If you have an idea for a new rule, please submit a Feature Request!
+
 # Examples
 
 Code samples and snippets live in the [examples/](examples) folder.
