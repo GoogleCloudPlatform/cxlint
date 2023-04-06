@@ -1,12 +1,12 @@
 # Dialogflow CX Linter
 <a href="https://github.com/googleapis/google-cloud-python/blob/main/README.rst#stability-levels" alt="preview">
-<img src="https://img.shields.io/badge/support-preview-gold" /></a>
+<img src="https://img.shields.io/badge/support-stable-gold" /></a>
 <a href="https://pypi.org/project/cxlint/" alt="preview">
 <img src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue" /></a>
 
 \
-Similar to [code linting](https://en.wikipedia.org/wiki/Lint_(software)), Dialogflow CX Agents can benefit from an automated linter to catch various common design defects when developing Agents.  
-The primary goal is to minimize common defects shipped to production by proactively catching and fixing them.  
+Similar to [code linting](https://en.wikipedia.org/wiki/Lint_(software)), Dialogflow CX Agents can benefit from an automated linter to catch various common design defects when developing Agents.
+The primary goal is to minimize common defects shipped to production by proactively catching and fixing them.
 
 
 # Quick Start
@@ -35,7 +35,7 @@ virtualenv <your-env>
 <your-env>\Scripts\pip.exe install google-cloud-dialogflow-cx
 ```
 
-# Authentication  
+# Authentication
 Authentication can vary depending on how and where you are interacting with SCRAPI.
 
 ## Google Colab
