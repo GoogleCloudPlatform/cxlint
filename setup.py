@@ -23,7 +23,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='cxlint',
-    version='1.0.0',
+    version='1.0.2',
     description='A static code analyzer that provides automated quality \
       control for Dialogflow CX Agents',
     long_description=long_description,
