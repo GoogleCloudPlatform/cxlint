@@ -20,7 +20,7 @@ import re
 
 from configparser import ConfigParser
 from typing import Dict, List, Union
-from resources.types import Intent, EntityType
+from cxlint.resources.types import Intent, EntityType
 
 # logging config
 logging.basicConfig(

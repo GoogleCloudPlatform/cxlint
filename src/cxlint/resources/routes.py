@@ -17,9 +17,9 @@
 from configparser import ConfigParser
 from typing import Dict, Any
 
-from common import Common
-from rules.response_messages import ResponseMessageRules
-from resources.types import Page, Fulfillment, LintStats, FormParameter
+from cxlint.common import Common
+from cxlint.rules.response_messages import ResponseMessageRules
+from cxlint.resources.types import Page, Fulfillment, LintStats, FormParameter
 
 
 class Fulfillments:

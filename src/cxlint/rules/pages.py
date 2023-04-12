@@ -17,9 +17,9 @@
 import re
 
 from typing import Dict, Any, Union
-from resources.types import Page, LintStats, Resource
+from cxlint.resources.types import Page, LintStats, Resource
 
-from rules.logger import RulesLogger
+from cxlint.rules.logger import RulesLogger
 
 class PageRules:
     """Page Level Rules and Definitions."""

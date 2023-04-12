@@ -19,9 +19,9 @@ import os
 
 from configparser import ConfigParser
 
-from common import Common
-from rules.webhooks import WebhookRules
-from resources.types import Webhook, LintStats
+from cxlint.common import Common
+from cxlint.rules.webhooks import WebhookRules
+from cxlint.resources.types import Webhook, LintStats
 
 class Webhooks:
     """Webhook linter methods and functions."""

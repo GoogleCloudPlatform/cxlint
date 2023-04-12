@@ -19,10 +19,10 @@ import json
 
 from configparser import ConfigParser
 
-from common import Common
+from cxlint.common import Common
 
-from resources.types import RouteGroup, Flow, LintStats
-from resources.routes import Fulfillments
+from cxlint.resources.types import RouteGroup, Flow, LintStats
+from cxlint.resources.routes import Fulfillments
 
 
 class RouteGroups:

@@ -17,9 +17,9 @@
 import re
 
 from typing import Dict, Any
-from resources.types import TestCase, LintStats, Resource
+from cxlint.resources.types import TestCase, LintStats, Resource
 
-from rules.logger import RulesLogger
+from cxlint.rules.logger import RulesLogger
 
 class TestCaseRules:
     """Test Case Rules and Definitions."""

@@ -17,9 +17,9 @@
 import re
 
 from typing import Dict, Any, List, Union
-from resources.types import Intent, LintStats, Resource
+from cxlint.resources.types import Intent, LintStats, Resource
 
-from rules.logger import RulesLogger
+from cxlint.rules.logger import RulesLogger
 
 class IntentRules:
     """Intent Rules and Definitions."""

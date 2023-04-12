@@ -32,7 +32,7 @@ setup(
     author='Patrick Marlow',
     author_email='pmarlow@google.com',
     classifiers=[
-        'Development Status :: 5 - Stable',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Topic :: Communications :: Chat',

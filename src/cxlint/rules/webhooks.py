@@ -17,9 +17,9 @@
 import re
 
 from typing import Dict, Any
-from resources.types import Webhook, LintStats, Resource
+from cxlint.resources.types import Webhook, LintStats, Resource
 
-from rules.logger import RulesLogger
+from cxlint.rules.logger import RulesLogger
 
 class WebhookRules:
     """Webhook Rules and Definitions."""

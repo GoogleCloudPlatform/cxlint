@@ -17,9 +17,9 @@
 import re
 
 from typing import Dict, Any
-from resources.types import Fulfillment, LintStats, Resource
+from cxlint.resources.types import Fulfillment, LintStats, Resource
 
-from rules.logger import RulesLogger
+from cxlint.rules.logger import RulesLogger
 
 class ResponseMessageRules:
     """Response Message Rules and Definitions."""

@@ -17,7 +17,7 @@
 from typing import Dict, List, Any
 from dataclasses import dataclass, field
 
-from graph import Graph
+from cxlint.graph import Graph
 
 @dataclass
 class AgentMetadata:

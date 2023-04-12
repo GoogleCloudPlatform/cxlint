@@ -20,10 +20,10 @@ import os
 from configparser import ConfigParser
 from typing import Dict, Any
 
-from common import Common
-from rules.pages import PageRules
-from resources.types import Flow, Page, LintStats, FormParameter
-from resources.routes import Fulfillments
+from cxlint.common import Common
+from cxlint.rules.pages import PageRules
+from cxlint.resources.types import Flow, Page, LintStats, FormParameter
+from cxlint.resources.routes import Fulfillments
 
 
 class Pages:

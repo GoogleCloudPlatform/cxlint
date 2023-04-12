@@ -20,15 +20,15 @@ import os
 from configparser import ConfigParser
 from typing import List
 
-from common import Common
-from rules.flows import FlowRules
-from rules.pages import PageRules
+from cxlint.common import Common
+from cxlint.rules.flows import FlowRules
+from cxlint.rules.pages import PageRules
 
-from graph import Graph
-from resources.types import Flow, Page, LintStats
-from resources.pages import Pages
-from resources.routes import Fulfillments
-from resources.route_groups import RouteGroups
+from cxlint.graph import Graph
+from cxlint.resources.types import Flow, Page, LintStats
+from cxlint.resources.pages import Pages
+from cxlint.resources.routes import Fulfillments
+from cxlint.resources.route_groups import RouteGroups
 
 
 class Flows:

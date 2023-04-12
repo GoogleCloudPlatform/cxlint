@@ -16,7 +16,7 @@
 
 from configparser import ConfigParser
 
-from common import Common
+from cxlint.common import Common
 
 
 

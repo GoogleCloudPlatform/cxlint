@@ -20,9 +20,9 @@ import os
 from typing import Dict
 from configparser import ConfigParser
 
-from common import Common
-from rules.intents import IntentRules
-from resources.types import Intent, LintStats
+from cxlint.common import Common
+from cxlint.rules.intents import IntentRules
+from cxlint.resources.types import Intent, LintStats
 
 
 class Intents:

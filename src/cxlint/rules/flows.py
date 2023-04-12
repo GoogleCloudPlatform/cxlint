@@ -17,9 +17,9 @@
 import re
 
 from typing import Dict, Any
-from resources.types import Flow, LintStats, Resource
+from cxlint.resources.types import Flow, LintStats, Resource
 
-from rules.logger import RulesLogger
+from cxlint.rules.logger import RulesLogger
 
 class FlowRules:
     """Flow Rules and Definitions."""

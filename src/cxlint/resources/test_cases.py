@@ -20,9 +20,9 @@ import os
 from configparser import ConfigParser
 from typing import Dict, List, Any
 
-from common import Common
-from rules.test_cases import TestCaseRules
-from resources.types import TestCase, LintStats
+from cxlint.common import Common
+from cxlint.rules.test_cases import TestCaseRules
+from cxlint.resources.types import TestCase, LintStats
 
 
 class TestCases:

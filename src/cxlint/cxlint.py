@@ -23,15 +23,15 @@ from rich.logging import RichHandler
 
 from typing import List, Any, Union, Dict
 
-from common import Common
-from gcs_utils import GcsUtils
+from cxlint.common import Common
+from cxlint.gcs_utils import GcsUtils
 
-from resources.agents import Agents
-from resources.flows import Flows
-from resources.entity_types import EntityTypes
-from resources.intents import Intents
-from resources.test_cases import TestCases
-from resources.webhooks import Webhooks
+from cxlint.resources.agents import Agents
+from cxlint.resources.flows import Flows
+from cxlint.resources.entity_types import EntityTypes
+from cxlint.resources.intents import Intents
+from cxlint.resources.test_cases import TestCases
+from cxlint.resources.webhooks import Webhooks
 
 console = Console(
     record=True,
@@ -65,7 +65,8 @@ logging.basicConfig(
 config = configparser.ConfigParser()
 config.sections()
 
-config_filepath = os.path.join(os.path.dirname(__file__), "..", ".cxlintrc")
+config_filepath = os.path.join(
+    os.path.dirname(__file__), ".cxlintrc")
 with open(config_filepath, encoding="UTF-8") as config_filepath_infile:
     config.read_file(config_filepath_infile)
 

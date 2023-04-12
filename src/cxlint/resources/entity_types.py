@@ -19,9 +19,9 @@ import os
 
 from configparser import ConfigParser
 
-from common import Common
-from rules.entity_types import EntityTypeRules
-from resources.types import EntityType, LintStats
+from cxlint.common import Common
+from cxlint.rules.entity_types import EntityTypeRules
+from cxlint.resources.types import EntityType, LintStats
 
 
 class EntityTypes:
