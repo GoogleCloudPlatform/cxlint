@@ -36,7 +36,7 @@ virtualenv <your-env>
 ```
 
 # Authentication
-Authentication can vary depending on how and where you are interacting with SCRAPI.
+Authentication can vary depending on how and where you are interacting with Dialogfow CX Linter.
 
 ## Google Colab
 If you're using cxlint with a [Google Colab](https://colab.research.google.com/) notebook, you can add the following to the top of your notebook for easy authentication
