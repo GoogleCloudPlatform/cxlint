@@ -23,7 +23,7 @@ long_description = (here / 'README.md').read_text(encoding='utf-8')
 
 setup(
     name='cxlint',
-    version='1.0.3',
+    version='1.0.4',
     description='A static code analyzer that provides automated quality \
       control for Dialogflow CX Agents',
     long_description=long_description,
@@ -44,5 +44,6 @@ setup(
     keywords='dialogflow, cx, google, bot, chatbot, linter, dfcx',
     package_dir={'':'src'},
     packages=find_packages(where='src'),
+    package_data={'': ['.cxlintrc']},
     python_requires='>=3.6, <4',
 )
