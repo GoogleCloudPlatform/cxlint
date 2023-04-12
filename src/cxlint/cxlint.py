@@ -65,8 +65,7 @@ logging.basicConfig(
 config = configparser.ConfigParser()
 config.sections()
 
-config_filepath = os.path.join(
-    os.path.dirname(__file__), ".cxlintrc")
+config_filepath = "cxlint/.cxlintrc"
 with open(config_filepath, encoding="UTF-8") as config_filepath_infile:
     config.read_file(config_filepath_infile)
 
