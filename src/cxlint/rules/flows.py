@@ -45,20 +45,20 @@ class FlowRules:
 
             stats.total_inspected += 1
 
-        if not res:
-            resource = Resource()
-            resource.agent_id = flow.agent_id
-            resource.flow_display_name = flow.display_name
-            resource.flow_id = flow.resource_id
-            resource.page_display_name = None
-            resource.page_id = None
-            resource.resource_type = "flow"
+            if not res:
+                resource = Resource()
+                resource.agent_id = flow.agent_id
+                resource.flow_display_name = flow.display_name
+                resource.flow_id = flow.resource_id
+                resource.page_display_name = None
+                resource.page_id = None
+                resource.resource_type = "flow"
 
-            message = ": Flow Display Name does not meet the specified Naming"\
-                  f" Convention : {flow.naming_pattern}"
-            stats.total_issues += 1
+                message = ": Flow Display Name does not meet the specified"\
+                    f" Naming Convention : {flow.naming_pattern}"
+                stats.total_issues += 1
 
-            self.log.generic_logger(resource, rule, message)
+                self.log.generic_logger(resource, rule, message)
 
         return stats
 
