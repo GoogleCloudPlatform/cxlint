@@ -77,6 +77,7 @@ class CxLint:
         self,
         agent_id: str = None,
         agent_type: str = None,
+        disable_rules: List[str] = None,
         intent_include_pattern: str = None,
         intent_exclude_pattern: str = None,
         flow_include_list: List[str] = None,
@@ -98,6 +99,9 @@ class CxLint:
 
         if agent_type:
             self.update_config("AGENT TYPE", agent_type)
+
+        if disable_rules:
+            self.update_config("MESSAGES CONTROL", disable_rules)
 
         if flow_include_list or flow_exclude_list:
             self.update_flows_config(flow_include_list, flow_exclude_list)
@@ -207,6 +211,10 @@ class CxLint:
         if section == "INTENTS":
             data = self.transform_list_to_str(data)
             config.set(section, "language_code", data)
+
+        if section == "MESSAGES CONTROL":
+            data = self.transform_list_to_str(data)
+            config.set(section, "disable", data)
 
         if section == "TEST CASE TAGS":
             data = self.transform_list_to_str(data)
