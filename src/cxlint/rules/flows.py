@@ -40,6 +40,7 @@ class FlowRules:
         """Check that the Flow Display Name conforms to naming conventions."""
         rule = "R015: Naming Conventions"
 
+        res = None
         if flow.naming_pattern:
             res = re.search(flow.naming_pattern, flow.display_name)
 
