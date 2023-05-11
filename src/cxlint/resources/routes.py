@@ -63,6 +63,40 @@ class Fulfillments:
         ):
             route.page.has_webhook_event_handler = True
 
+    @staticmethod
+    def update_session_parameters(route: Fulfillment, item: Dict[Any, str]):
+        """Updates the Session Parameter dict with any new params."""
+        session_params = route.page.flow.agent.session_parameters
+        page_display_name = route.page.display_name
+
+        for key, value in item.items():
+            if key == 'parameter':
+                param_key = value
+            elif key == 'value':
+                param_value = value
+
+        res = session_params.get(param_key, None)
+
+        # Key already exist in session parameters
+        if res:
+            res['value_history'].append(param_value)
+            res['page_history'].append(page_display_name)
+            res['current_value'] = param_value
+            res['current_page'] = page_display_name
+
+            route.page.flow.agent.session_parameters[param_key] = res
+
+        # Key does not exist in session params, so we'll build the payload
+        else:
+            data = {
+                'current_value': param_value,
+                'value_history': [param_value],
+                'current_page': page_display_name,
+                'page_history': [page_display_name]
+            }
+
+            route.page.flow.agent.session_parameters[param_key] = data
+
     def collect_transition_route_trigger(self, route):
         """Inspect route and return all Intent/Condition info."""
 
@@ -159,6 +193,7 @@ class Fulfillments:
         else:
             self.route_parameters[flow_name] = {page_name: [item]}
 
+        self.update_session_parameters(route, item)
 
     def lint_fulfillment_type(
         self, stats: LintStats, route: Fulfillment, path: object, key: str

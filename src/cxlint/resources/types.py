@@ -20,19 +20,20 @@ from dataclasses import dataclass, field
 from cxlint.graph import Graph
 
 @dataclass
-class AgentMetadata:
-    """Used to track the current Agent Metadata attrinbutes."""
+class Agent:
+    """Used to track the current Agent attrinbutes."""
 
     default_language_code: str = None
     dtmf_settings: bool = False
     logging_enabled: bool = False
+    session_parameters: Dict[str, Any] = field(default_factory=dict)
     speech_adaptation: bool = False
 
 
 @dataclass
 class Flow:
     """Used to track current Flow Attributes."""
-
+    agent: Agent = None
     agent_id: str = None
     all_pages: set = field(default_factory=set)
     active_pages: set = field(default_factory=set)
@@ -109,7 +110,7 @@ class RouteGroup:
 
 @dataclass
 class Fulfillment:
-    """Used to track current Fulfillment Attributes."""
+    """Used to track current Route/Fulfillment Attributes."""
 
     agent_id: str = None
     agent_type: str = None

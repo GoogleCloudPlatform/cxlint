@@ -78,6 +78,7 @@ class CxLint:
         agent_id: str = None,
         agent_type: str = None,
         disable_rules: List[str] = None,
+        infobot: bool = False,
         intent_include_pattern: str = None,
         intent_exclude_pattern: str = None,
         flow_include_list: List[str] = None,

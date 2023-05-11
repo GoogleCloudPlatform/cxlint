@@ -25,7 +25,7 @@ from cxlint.rules.flows import FlowRules
 from cxlint.rules.pages import PageRules
 
 from cxlint.graph import Graph
-from cxlint.resources.types import Flow, Page, LintStats
+from cxlint.resources.types import Agent, Flow, Page, LintStats
 from cxlint.resources.pages import Pages
 from cxlint.resources.routes import Fulfillments
 from cxlint.resources.route_groups import RouteGroups
@@ -336,6 +336,7 @@ class Flows:
         self.console.log(start_message)
 
         stats = LintStats()
+        agent = Agent()
 
         # Create a list of all Flow paths to iter through
         flow_paths = self.build_flow_path_list(agent_local_path)
@@ -343,7 +344,7 @@ class Flows:
 
         # linting happens here
         for flow_path in flow_paths:
-            flow = Flow()
+            flow = Flow(agent=agent)
             flow.graph = Graph()
             flow.verbose = self.verbose
             flow.agent_id = self.agent_id
